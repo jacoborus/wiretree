@@ -1,0 +1,29 @@
+{
+  "name": "wiretree",
+  "version": "0.1.0",
+  "description": "Node.js dependency injection framework",
+  "main": "lib/wiretree.js",
+  "scripts": {
+    "test": "node ./node_modules/mocha/bin/mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:jacoborus/wiretree.git"
+  },
+  "keywords": [
+    "dependency",
+    "injection",
+    "framework",
+    "plugin"
+  ],
+  "homepage": "https://github.com/jacoborus/wiretree",
+  "author": "Jacobo Tabernero - jacobo@xarope.eu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jacoborus/wiretree/issues"
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "chai": "^1.9.1"
+  }
+}
