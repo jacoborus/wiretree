@@ -45,7 +45,7 @@ tree.get( 'data' );
 var sum = function (data) {
     return data.a + data.b;
 };
-tree.add( sum, 'sum' );
+tree.add( {wiretree: sum}, 'sum' );
 
 tree.get( 'sum' );
 // => 3
