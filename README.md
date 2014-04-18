@@ -193,7 +193,12 @@ tree.get( 'myGroup');
 *Array*  list of keys of modules added
 
 
+Tests
+-----
 
+```js
+npm install && npm test
+```
 
 <br><br>
 
