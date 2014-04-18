@@ -11,6 +11,63 @@ Installation
 npm install wiretree
 ```
 
+
+Example:
+--------
+
+**`module.js`:**
+```js
+module.exports = function () {
+    return 'This is a module';
+}
+```
+
+**`plugin.js`:**
+```js
+module.exports.wiretree = function (sum) {
+    return 'result is ' + sum;
+}
+```
+
+**`index.js`:**
+```js
+var Wiretree = require( 'wiretree' );
+
+var tree = new Wiretree( __dirname );
+
+// add a module without dependencies
+tree.add( {a:1, b:2}, 'data' );
+
+tree.get( 'data' );
+// => {a:1, b:2}
+
+// add a wiretree plugin (module with dependencies)
+var sum = function (data) {
+    return data.a + data.b;
+};
+tree.add( sum, 'sum' );
+
+tree.get( 'sum' );
+// => 3
+
+// load and add a module (no dependencies)
+tree.load( './module.js', 'mod' );
+
+var mod = tree.get( 'mod' );
+mod();
+// => 'This is a module'
+
+
+// load and add a wiretree plugin (module with dependencies)
+tree.load( './plugin.js', 'result' );
+
+// get a resolved a module (this resolves its dependencies too)
+tree.get( 'result' );
+// => 'result is 3'
+```
+
+
+
 API
 ---
 
@@ -102,14 +159,14 @@ Returns a list of module dependencies in an `array`.
 module.js:
 ```js
 module.exports = function () {
-return 2;
+    return 2;
 };
 ```
 
 plugin.js:
 ```js
 module.exports.wiretree = function (mod) {
-return mod + 2;
+    return mod + 2;
 };
 ```
 
@@ -169,9 +226,9 @@ tree.folder( './myFolder' );
 // => ['myMod', 'myPlugin']
 
 var options = {
-group: 'myGroup',
-prefix: 'pre',
-suffix: 'Ctrl'
+    group: 'myGroup',
+    prefix: 'pre',
+    suffix: 'Ctrl'
 }
 
 tree.folder( './myFolder', options);
