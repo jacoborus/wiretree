@@ -46,7 +46,7 @@ Returns a list of module dependencies in an `array`.
 
 **Example**:
 
-```
+```js
 // Add and get a simple module
 var addon = 2;
 
@@ -100,14 +100,14 @@ Returns a list of module dependencies in an `array`.
 **Example**:
 
 module.js:
-```
+```js
 module.exports = function () {
 return 2;
 };
 ```
 
 plugin.js:
-```
+```js
 module.exports.wiretree = function (mod) {
 return mod + 2;
 };
