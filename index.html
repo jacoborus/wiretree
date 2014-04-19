@@ -75,7 +75,7 @@ tree.get( &#39;result&#39; );
 <h2>Installation</h2>
 <pre><code>npm install wiretree</code></pre>
 <h2>API</h2>
-<h3>Wiretree#get(key)</h3>
+<h3>#get( key )</h3>
 <p>Get module or group of modules <code>key</code>.
 This method will render all required wiretree plugins into modules</p>
 <pre><code class="language-javascript">tree.get( &#39;myModule&#39; );
@@ -88,7 +88,7 @@ var myModule = group.myModule;</code></pre>
 <p><strong>key</strong>:  <em>String</em>,  name of plugin to get</p>
 <p><strong>Returns</strong></p>
 <p><em>Object</em>,  rendered plugin</p>
-<h3>Wiretree#add(key, value, group)</h3>
+<h3>#add( key, value, group, localName )</h3>
 <p>Add a module or wiretree plugin into the tree. Wiretree plugins won&#39;t be resolved until you get them.
 Returns a list of module dependencies in an <code>array</code>.</p>
 <p><strong>Example</strong>:</p>
@@ -123,7 +123,7 @@ return control.home;
 <p><strong>group</strong>:  <em>String</em>,  (optional) name of group to add the plugin</p>
 <p><strong>Returns</strong></p>
 <p><em>Array</em>,  list of dependencies names</p>
-<h3>Wiretree#load(key, route, group)</h3>
+<h3>#load( key, route, group, localName )</h3>
 <p>Load a module or wiretree plugin from <code>route</code> in disk and add it into the tree. Wiretree plugins won&#39;t be resolved until you get them.
 Returns a list of module dependencies in an <code>array</code>.</p>
 <p><strong>Example</strong>:</p>
@@ -161,7 +161,7 @@ return control.home;
 <p><strong>group</strong>:  <em>String</em>,  (optional) name of group to add the plugin</p>
 <p><strong>Returns</strong></p>
 <p><em>Array</em>,  list of dependencies names</p>
-<h3>Wiretree#folder(route, options)</h3>
+<h3>#folder( route, options )</h3>
 <p>Load and add every file in the folder <code>route</code>.</p>
 <p>Filename without extension is <code>key</code> and <code>localName</code> for every file, but prefixes and suffixes can be
 added to the <code>key</code> through <code>options.prefix</code> and <code>options.suffix</code> with camelCase style. These transformations
