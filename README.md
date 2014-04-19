@@ -68,7 +68,21 @@ tree.get( 'result' );
 // => 'result is 3'
 ```
 
+Import folders and tranform keynames:
 
+```js
+var options = {
+    group: 'myGroup',
+    prefix: 'pre',
+    suffix: 'Ctrl'
+}
+
+tree.folder( './myFolder', options);
+// => ['preMyModCtrl', 'preMyPluginCtrl']
+
+tree.get( 'myGroup');
+// => {myMod: [object Function], myPlugin: [object Function]}
+```
 
 API
 ---
