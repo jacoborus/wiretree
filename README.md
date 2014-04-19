@@ -72,7 +72,7 @@ API
 ---
 
 
-### Wiretree#get(key)
+### #get( key )
 
 Get module or group of modules `key`.
 This method will render all required wiretree plugins into modules
@@ -96,7 +96,7 @@ var myModule = group.myModule;
 
 *Object*,  rendered plugin
 
-### Wiretree#add(key, value, group)
+### #add( key, value, group, localName )
 
 Add a module or wiretree plugin into the tree. Wiretree plugins won't be resolved until you get them.
 Returns a list of module dependencies in an `array`.
@@ -149,7 +149,7 @@ return control.home;
 
 *Array*,  list of dependencies names
 
-### Wiretree#load(key, route, group)
+### #load( key, route, group, localName )
 
 Load a module or wiretree plugin from `route` in disk and add it into the tree. Wiretree plugins won't be resolved until you get them.
 Returns a list of module dependencies in an `array`.
@@ -211,7 +211,7 @@ return control.home;
 
 *Array*,  list of dependencies names
 
-### Wiretree#folder(route, options)
+### #folder(route, options)
 
 Load and add every file in the folder `route`.
 
