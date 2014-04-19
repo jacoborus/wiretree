@@ -1,6 +1,6 @@
 {
   "name": "wiretree",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node.js dependency injection framework",
   "main": "lib/wiretree.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "framework",
     "plugin"
   ],
-  "homepage": "https://github.com/jacoborus/wiretree",
+  "homepage": "http://wiretree.micronube.com/",
   "author": "Jacobo Tabernero - jacobo@xarope.eu",
   "license": "MIT",
   "bugs": {
