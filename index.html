@@ -72,6 +72,18 @@ tree.load( &#39;./plugin.js&#39;, &#39;result&#39; );
 // get a resolved a module (this resolves its dependencies too)
 tree.get( &#39;result&#39; );
 // =&gt; &#39;result is 3&#39;</code></pre>
+<p>Import folders and tranform keynames:</p>
+<pre><code class="language-javascript">var options = {
+    group: &#39;myGroup&#39;,
+    prefix: &#39;pre&#39;,
+    suffix: &#39;Ctrl&#39;
+}
+
+tree.folder( &#39;./myFolder&#39;, options);
+// =&gt; [&#39;preMyModCtrl&#39;, &#39;preMyPluginCtrl&#39;]
+
+tree.get( &#39;myGroup&#39;);
+// =&gt; {myMod: [object Function], myPlugin: [object Function]}</code></pre>
 <h2>Installation</h2>
 <pre><code>npm install wiretree</code></pre>
 <h2>API</h2>
