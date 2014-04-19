@@ -68,7 +68,7 @@ tree.get( 'result' );
 // => 'result is 3'
 ```
 
-Import folders and tranform keynames:
+**Import folders** and tranform keynames:
 
 ```js
 var options = {
@@ -103,14 +103,14 @@ var myModule = group.myModule;
 ```
 
 
+**Parameters**:
 
-**Parameters**
+- **key**:  *String*,  name of plugin to get
 
-**key**:  *String*,  name of plugin to get
+**Returns** a *Object*:  rendered plugin
 
-**Returns**
 
-*Object*,  rendered plugin
+
 
 ### #add( key, value, group, localName )
 
@@ -153,17 +153,17 @@ return control.home;
 
 
 
-**Parameters**
+**Parameters**:
 
-**key**:  *String*,  name for the plugin
+- **key**:  *String*,  name for the plugin
+- **value**:  *type*,  plugin
+- **group**:  *String*,  (optional) name of group to add the plugin
+- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
 
-**value**:  *type*,  plugin
+**Returns** an *Array*,  list of dependencies names
 
-**group**:  *String*,  (optional) name of group to add the plugin
 
-**Returns**
 
-*Array*,  list of dependencies names
 
 ### #load( key, route, group, localName )
 
@@ -172,21 +172,21 @@ Returns a list of module dependencies in an `array`.
 
 **Example**:
 
-module.js:
+**`module.js`**:
 ```js
 module.exports = function () {
     return 2;
 };
 ```
 
-plugin.js:
+**`plugin.js`**:
 ```js
 module.exports.wiretree = function (mod) {
     return mod + 2;
 };
 ```
 
-index.js:
+**`index.js`**:
 ```js
 tree.load( './module.js', 'mod' );
 // => []
@@ -217,15 +217,15 @@ return control.home;
 
 **Parameters**
 
-**key**:  *String*,  name for the plugin
+- **key**:  *String*,  name for the plugin
+- **route**:  *String*,  path to plugin
+- **group**:  *String*,  (optional) name of group to add the plugin
+- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
 
-**route**:  *String*,  path to plugin
+**Returns** an *Array*:  list of dependencies names
 
-**group**:  *String*,  (optional) name of group to add the plugin
 
-**Returns**
 
-*Array*,  list of dependencies names
 
 ### #folder(route, options)
 
@@ -258,12 +258,10 @@ tree.get( 'myGroup');
 
 **Parameters**
 
-**route**:  *String*,  path to folder
+- **route**:  *String*,  path to folder
+- **options**:  *Object*
 
-**options**:  *Object*
-
-**Return**
-*Array*  list of keys of modules added
+**Returns** an *Array*:  list of keys of modules added
 
 
 Tests
