@@ -132,7 +132,7 @@ pre[class*="language-"]:after {
 .token.string,
 .token.function,
 .token.builtin {
-  color: #2f9c0a;
+  color: #00817f;
 }
 
 .token.operator,
@@ -147,7 +147,7 @@ pre[class*="language-"]:after {
 .token.attr-value,
 .token.keyword,
 .token.class-name {
-  color: #2ca0a5;
+  color: #00c1bf;
 }
 
 .token.regex,
