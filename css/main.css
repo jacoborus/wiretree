@@ -56,7 +56,7 @@ textarea {
 }
 /** FIX PRISM STYLE **/
 pre[class*="language-"] {
-    border-left: 3px solid #1df1ef;
+    border-left: 8px solid #4b9f4b;
 }
 
 
@@ -107,7 +107,7 @@ h1 {
 h2 {
     margin-top: 4em;
     font-size: 32px;
-    border-bottom: 2px dotted #bbb;
+    border-bottom: 2px dotted #4b9f4b;
 }
 h3 {
     margin-top: 3em;
@@ -136,25 +136,6 @@ button.doc_go:hover {
     background-color: #333;
     color: #fff;
 }
-code {
-    font-family: 'Ubuntu Mono', sans-serif;
-    padding: 0.2em 0.6em;
-    background-color: #eee;
-    color: #333;
-    border-radius: 0.3em;
-}
-pre.full {
-    font-family: 'Ubuntu Mono', sans-serif;
-    padding: 0.8em 1.2em;
-    background-color: #333;
-    color: #fff;
-    border-radius: 0.3em;
-}
-pre.full code{
-    background-color: #333;
-    color: #fff;
-    padding: 0;
-}
 li {
     line-height: 2em;
 }
@@ -167,10 +148,21 @@ pre[class*="language-"] {
     max-height: 100%;
     overflow: auto;
 }
-
+pre {
+    font-family: 'Ubuntu Mono', sans-serif;
+    padding: 0.8em 1.2em;
+    background-color: #4b9f4b;
+    color: #fff;
+    border-radius: 0.3em;
+}
+pre code{
+    color: #fff;
+    padding: 0;
+}
 code[class*="language"] {
 max-height: 100%;
 overflow: auto;
+background-color: #fff
 }
 /* ==========================================================================
    Helper classes
@@ -271,7 +263,6 @@ overflow: auto;
 
     pre,
     blockquote {
-        border: 1px solid #999;
         page-break-inside: avoid;
     }
 

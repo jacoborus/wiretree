@@ -6,7 +6,7 @@
 
 code[class*="language-"],
 pre[class*="language-"] {
-  color: black;
+  color: #333;
   font-family: Consolas, Monaco, 'Andale Mono', monospace;
   direction: ltr;
   text-align: left;
@@ -22,6 +22,7 @@ pre[class*="language-"] {
   -moz-hyphens: none;
   -ms-hyphens: none;
   hyphens: none;
+  line-height: 24px;
 }
 
 /* Code blocks */
@@ -29,16 +30,7 @@ pre[class*="language-"] {
   position:relative;
   padding: 1em;
   margin: .5em 0;
-  -webkit-box-shadow: -1px 0px 0px 0px #a3dadc, 0px 0px 0px 1px #dfdfdf;
-  -moz-box-shadow: -1px 0px 0px 0px #a3dadc, 0px 0px 0px 1px #dfdfdf;
-  box-shadow: -1px 0px 0px 0px #a3dadc, 0px 0px 0px 1px #dfdfdf;
-  border-left: 10px solid #a3dadc;
-  background-color: #fdfdfd;
-  background-image: -webkit-linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
-  background-image: -moz-linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
-  background-image: -ms-linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
-  background-image: -o-linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
-  background-image: linear-gradient(transparent 50%, rgba(69, 142, 209, 0.04) 50%);
+  background-color: #fff;
   background-size: 3em 3em;
   background-origin:content-box;
   overflow:visible;
@@ -54,7 +46,7 @@ code[class*="language"] {
 /* Margin bottom to accomodate shadow */
 :not(pre) > code[class*="language-"],
 pre[class*="language-"] {
-  background-color:#fdfdfd;
+  background-color:#fff;
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
@@ -84,14 +76,6 @@ pre[class*="language-"]:after {
   left: 0.18em;
   width: 40%;
   height: 20%;
-  -webkit-box-shadow: 0px 13px 8px #979797;
-  -moz-box-shadow: 0px 13px 8px #979797;
-  box-shadow: 0px 13px 8px #979797;
-  -webkit-transform: rotate(-2deg);
-  -moz-transform: rotate(-2deg);
-  -ms-transform: rotate(-2deg);
-  -o-transform: rotate(-2deg);
-  transform: rotate(-2deg);
 }
 
 :not(pre) > code[class*="language-"]:after,
@@ -124,7 +108,8 @@ pre[class*="language-"]:after {
 .token.function-name,
 .token.constant,
 .token.symbol {
-  color: #c92c2c;
+  color: #333;
+  background-color: #eee;
 }
 
 .token.selector,
@@ -132,7 +117,7 @@ pre[class*="language-"]:after {
 .token.string,
 .token.function,
 .token.builtin {
-  color: #00817f;
+  color: #4b9f4b;
 }
 
 .token.operator,
@@ -147,7 +132,8 @@ pre[class*="language-"]:after {
 .token.attr-value,
 .token.keyword,
 .token.class-name {
-  color: #00c1bf;
+  color: #4b9f4b;
+  background-color: #eee;
 }
 
 .token.regex,
