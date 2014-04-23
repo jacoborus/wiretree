@@ -1,4 +1,4 @@
-![Wiretree](https://raw.githubusercontent.com/jacoborus/wiretree/master/wiretree.png 'Wiretree logo')
+![Wiretree](https://raw.githubusercontent.com/jacoborus/wiretree/master/brand/wiretree.png 'Wiretree logo')
 ======================================================================================================
 
 Elegant dependency injection framework for Node.js.
