@@ -257,12 +257,17 @@ describe( 'Wiretree#get', function () {
 		expect( fruits.salad ).equal( 'orange and apple are fruits' );
 	});
 
-	it( 'throws error on circular dependencies after "Maximum call stack size exceeded"'
-		/*, function () {
-		var one = function (two) {};
-		var two = function (one) {};
-		tree.add( 'one', one );
-		tree.add( 'two', two );
-		expect( tree.get( 'one' )).to.throw( 'Circular dependencies' );
-		}*/);
+	it( 'throws error on circular dependencies after "Maximum call stack size exceeded"', function () {
+		var one = function (two) {
+			return two + 5;
+		};
+		var two = function (one) {
+			return one + 2;
+		};
+		tree.add( {wiretree: one}, 'one' );
+		tree.add( {wiretree: two}, 'two' );
+		expect( function () {
+			tree.get( 'one' );
+		}).to.throw( 'Circular dependencies' );
+	});
 });
