@@ -50,7 +50,6 @@ tree.get( 'data' );
 
 
 
-
 // Add a wiretree plugin `sum` (module with dependencies)
 var sum = function (data) {
     return data.a + data.b;
@@ -62,7 +61,9 @@ tree.add( {wiretree: sum}, 'sum' );
 tree.get( 'sum' );
 // => 3
 
-// load and add a module (no dependencies)
+
+
+// load and add a module from file
 tree.load( './module.js', 'mod' );
 
 var mod = tree.get( 'mod' );
@@ -78,7 +79,8 @@ tree.get( 'result' );
 // => 'result is 3'
 ```
 
-**Import folders** and tranform keynames:
+**A complex example**:
+Import an entire folder, sets its plugins and modules into groups and tranform keynames with prefixes and suffixes:
 
 ```js
 var options = {
@@ -87,6 +89,7 @@ var options = {
     suffix: 'Ctrl'
 }
 
+// folder method return the keynames of its plugins/modules
 tree.folder( './myFolder', options);
 // => ['preMyModCtrl', 'preMyPluginCtrl']
 
