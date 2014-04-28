@@ -26,7 +26,7 @@ module.exports = function () {
 }
 ```
 
-A Wiretree plugin is a function exposed as 'module.exports.wiretree', with its dependencies names declared as arguments. Plugins has to return the rendered module. If your plugin doesn't nedd to return a module just return `true` in order to continue (this is important for async loading).
+A Wiretree plugin is a function exposed as 'module.exports.wiretree', with its dependencies names declared as arguments. Plugins returns the rendered module. If your plugin doesn't need to return a module simply return `true` in order to continue (this is important for async loading).
 
 **`plugin.js`:**
 ```js
@@ -80,7 +80,7 @@ tree.get( 'result' );
 ```
 
 **A complex example**:
-Import an entire folder, sets its plugins and modules into groups and tranform keynames with prefixes and suffixes:
+Import an entire folder, sets its plugins and modules into groups and rename the keys with the provided prefix and suffix:
 
 ```js
 var options = {
@@ -244,9 +244,9 @@ return control.home;
 
 Load and add every file in the folder `route`.
 
-Filename without extension is `key` and `localName` for every file, but prefixes and suffixes can be
-added to the `key` through `options.prefix` and `options.suffix` with camelCase style. These transformations
-not affects the `localName` in groups.
+Each file inside folder will be added using the filename (without extension) as `key` and `localName`,
+using `options.prefix` and `options.suffix` as a prefix and suffix on the `key` accordingly, `localName` will
+remain unchanged.
 
 Returns list of `key`s in an `array`
 
