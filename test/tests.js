@@ -214,6 +214,10 @@ describe( 'Wiretree#folder', function () {
 		expect( tree.plugins.preAddonSuf.group ).to.equal( 'testgroup' );
 	});
 
+	it( 'create group in tree if not exist', function () {
+		expect( tree.groups.testgroup ).to.exist;
+	});
+
 	it( 'accepts middleware transformations', function () {
 		var transform = function (text) {
 			return text + '2';
