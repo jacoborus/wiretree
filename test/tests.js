@@ -268,6 +268,6 @@ describe( 'Wiretree#get', function () {
 		tree.add( {wiretree: two}, 'two' );
 		expect( function () {
 			tree.get( 'one' );
-		}).to.throw( 'Circular dependencies' );
+		}).to.throw( 'Circular dependencies: one' );
 	});
 });
