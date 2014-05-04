@@ -1,10 +1,20 @@
 ![Wiretree](https://raw.githubusercontent.com/jacoborus/wiretree/master/brand/wiretree.png 'Wiretree logo')
-======================================================================================================
+===========================================================================================================
 
 Elegant dependency injection framework for Node.js.
 
 [wiretree.micronube.com](http://wiretree.micronube.com/)
 
+
+Features
+--------
+
+- Clean plugin syntax (just add dependencies as arguments)
+- Group modules
+- Add functions as modules or wiretree plugins (modules with dependencies)
+- Add modules and plugins from files
+- Add entire folders as group, as individual files or both
+- Add prefixes and suffixes to module keys for easy handling
 
 Installation
 ------------
