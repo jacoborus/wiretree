@@ -5,11 +5,11 @@ var expect = require('chai').expect,
 	util = require('util');
 
 var Wiretree = require('..');
-var tree = new Wiretree();
 
 
 
 describe( 'Wiretree#folder', function () {
+	var tree = new Wiretree();
 
 	var options = {};
 

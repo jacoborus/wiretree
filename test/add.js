@@ -4,12 +4,12 @@ var expect = require('chai').expect,
 	util = require('util');
 
 var Wiretree = require('..');
-var tree = new Wiretree();
 
 
 
 
 describe( 'Wiretree#add', function () {
+	var tree = new Wiretree();
 
 	var plugin = function (){
 		return 'I\'m a module';

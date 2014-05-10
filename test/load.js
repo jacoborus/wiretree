@@ -3,13 +3,11 @@
 var expect = require('chai').expect,
 	util = require('util');
 
-var Wiretree = require('..');
-var tree = new Wiretree();
-
-
-
 
 describe( 'Wiretree#load', function () {
+	var Wiretree = require('..');
+	var tree = new Wiretree();
+
 
 	it( 'throws errors on bad argument: key', function () {
 		expect( function () {
