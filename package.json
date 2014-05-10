@@ -1,6 +1,6 @@
 {
   "name": "wiretree",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Node.js dependency injection framework",
   "main": "lib/wiretree.js",
   "scripts": {
@@ -23,7 +23,7 @@
     "url": "https://github.com/jacoborus/wiretree/issues"
   },
   "devDependencies": {
-    "mocha": "latest",
-    "chai": "^1.9.1"
+    "chai": "^1.9.1",
+    "mocha": "^1.18.2"
   }
 }
