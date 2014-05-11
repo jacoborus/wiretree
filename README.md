@@ -10,6 +10,7 @@ Features
 --------
 
 - Clean plugin syntax (just add dependencies as arguments)
+- Load files and render modules on demand
 - Group modules
 - Add functions as modules or wiretree plugins (modules with dependencies)
 - Add modules and plugins from files
