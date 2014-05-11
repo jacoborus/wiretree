@@ -1,9 +1,45 @@
-
 API
 ---
 
 
-get( key )
+
+Wiretree constructor( options )
+-------------------------------
+
+
+**Parameters**:
+
+- **options**:  *String|Object*,  root path or options
+
+
+Creates new tree with options object.
+
+Options:
+- rootpath: path to resolve dependencies
+- keyname: name to resolve modules
+
+Example:
+
+Passing root path as options
+
+```js
+var Wiretree = require('wiretree');
+var tree = new Wiretree( 'path/to/rootFolder');
+```
+
+Passing options as argument
+
+```js
+var Wiretree = require('wiretree');
+var tree = new Wiretree({
+   rootpath:'path/to/rootFolder',
+   keyname: '_tree'
+});
+```
+
+
+
+.get( key )
 -----------
 
 **Parameters**:
@@ -26,8 +62,8 @@ var myModule = group.myModule;
 
 
 
-add( key, value, group, localName )
------------------------------------
+.add( key, value, group, localName )
+------------------------------------
 
 **Parameters**:
 
@@ -78,8 +114,8 @@ return control.home;
 
 
 
-load( key, route, group, localName )
-------------------------------------
+.load( key, route, group, localName )
+-------------------------------------
 
 
 **Parameters**
@@ -139,8 +175,8 @@ return control.home;
 
 
 
-folder(route, options)
-----------------------
+.folder( route, options )
+-------------------------
 
 
 **Parameters**
