@@ -7,10 +7,9 @@ WiretreeAPI
 - [add](#add)
 - [load](#load)
 - [folder](#folder)
-- [wireUp](#wireUp)
 
-
-Wiretree( options ) {#Wiretree }
+<a name="Wiretree"></a>
+Wiretree( options )
 ---------------------------------------------
 
 Wiretree constructor
@@ -44,8 +43,8 @@ var tree = new Wiretree({
 ```
 
 
-
-get( key ) {#get }
+<a name="get"></a>
+get( key )
 ---------------------------------------------
 
 Get module or group of modules &#x60;key&#x60;.
@@ -67,8 +66,8 @@ var myModule = group.myModule;
 ```
 
 
-
-add( key, value, group, localName ) {#add }
+<a name="add"></a>
+add( key, value, group, localName )
 ---------------------------------------------
 
 Add a module or wiretree plugin into the tree. Wiretree plugins won&#x27;t be resolved until you get them.
@@ -118,8 +117,8 @@ return control.home;
 ```
 
 
-
-load( key, route, group, localName ) {#load }
+<a name="load"></a>
+load( key, route, group, localName )
 ---------------------------------------------
 
 Load a module or wiretree plugin from &#x60;route&#x60; in disk and add it into the tree.
@@ -180,8 +179,8 @@ return control.home;
 ```
 
 
-
-folder( route, options ) {#folder }
+<a name="folder"></a>
+folder( route, options )
 ---------------------------------------------
 
 Load and add every file in the folder &#x60;route&#x60;.
@@ -215,19 +214,6 @@ tree.folder( './myFolder', options);
 tree.get( 'myGroup');
 // => {myMod: [object Function], myPlugin: [object Function]}
 ```
-
-
-
-wireUp(  ) {#wireUp }
----------------------------------------------
-
-Render all not rendered modules
-
-**Parameters:**
-
-- **Return** *Number*: direct resolved dependencies
-
-
 
 
 
