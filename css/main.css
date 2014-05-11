@@ -82,6 +82,10 @@ a:hover {
 }
 p.center {
     text-align: center;
+    font-size: 18px;
+}
+code[class*="language"] {
+    font-size: 14px;
 }
 .capa {
     float: left;
