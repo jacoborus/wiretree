@@ -50,18 +50,18 @@
 <h2 id="example-">Example:</h2>
 <p>A typical module:</p>
 <p><strong><code>module.js</code>:</strong></p>
-<pre><code class="lang-js">module.exports = function () {
+<pre><code class="language-javascript">module.exports = function () {
     return &#39;This is a module&#39;;
 }
 </code></pre>
 <p>A Wiretree plugin is a function exposed as &#39;module.exports.wiretree&#39;, with its dependencies names declared as arguments. Plugins returns the rendered module. If your plugin doesn&#39;t need to return a module simply return <code>true</code> in order to continue (this is important for async loading).</p>
 <p><strong><code>plugin.js</code>:</strong></p>
-<pre><code class="lang-js">exports.wiretree = function (sum) {
+<pre><code class="language-javascript">exports.wiretree = function (sum) {
     return &#39;result is &#39; + sum;
 }
 </code></pre>
 <p><strong><code>index.js</code>:</strong></p>
-<pre><code class="lang-js">var Wiretree = require( &#39;wiretree&#39; );
+<pre><code class="language-javascript">var Wiretree = require( &#39;wiretree&#39; );
 
 // create a tree passing root path as parameter
 var tree = new Wiretree( __dirname );
@@ -102,7 +102,7 @@ tree.get( &#39;result&#39; );
 </code></pre>
 <p><strong>A complex example</strong>:
 Import an entire folder, sets its plugins and modules into groups and rename the keys with the provided prefix and suffix:</p>
-<pre><code class="lang-js">var options = {
+<pre><code class="language-javascript">var options = {
     group: &#39;myGroup&#39;,
     prefix: &#39;pre&#39;,
     suffix: &#39;Ctrl&#39;
