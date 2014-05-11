@@ -16,12 +16,19 @@ Features
 - Add entire folders as group, as individual files or both
 - Add prefixes and suffixes to module keys for easy handling
 
+
 Installation
 ------------
 
 ```
 npm install wiretree
 ```
+
+
+API
+---
+
+See [https://github.com/jacoborus/wiretree/blob/master/api.md](https://github.com/jacoborus/wiretree/blob/master/api.md)
 
 
 Example:
@@ -105,17 +112,20 @@ tree.get( 'myGroup');
 // => {myMod: [object Function], myPlugin: [object Function]}
 ```
 
-Docs & API
-----------
-
-See [https://github.com/jacoborus/wiretree/blob/master/api.md](https://github.com/jacoborus/wiretree/blob/master/api.md)
 
 
 Tests
 -----
 
-```js
-npm install && npm test
+```
+npm install -d && npm test
+```
+
+Build API docs
+--------------
+
+```
+npm install -d && npm run build-docs
 ```
 
 <br><br>

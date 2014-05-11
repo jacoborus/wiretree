@@ -1,5 +1,5 @@
-WiretreeAPI
-===========
+Wiretree API
+============
 
 
 - [Wiretree](#Wiretree)
@@ -10,7 +10,7 @@ WiretreeAPI
 
 <a name="Wiretree"></a>
 Wiretree( options )
----------------------------------------------
+------------------------------------------------------------
 
 Wiretree constructor
 Creates new tree with options object.
@@ -45,9 +45,9 @@ var tree = new Wiretree({
 
 <a name="get"></a>
 get( key )
----------------------------------------------
+------------------------------------------------------------
 
-Get module or group of modules &#x60;key&#x60;.
+Get module or group of modules `key`.
 This method will render all required wiretree plugins into modules
 
 **Parameters:**
@@ -68,10 +68,10 @@ var myModule = group.myModule;
 
 <a name="add"></a>
 add( key, value, group, localName )
----------------------------------------------
+------------------------------------------------------------
 
-Add a module or wiretree plugin into the tree. Wiretree plugins won&#x27;t be resolved until you get them.
-Returns a list of module dependencies in an &#x60;array&#x60;.
+Add a module or wiretree plugin into the tree. Wiretree plugins won't be resolved until you get them.
+Returns a list of module dependencies in an `array`.
 
 **Parameters:**
 
@@ -119,9 +119,9 @@ return control.home;
 
 <a name="load"></a>
 load( key, route, group, localName )
----------------------------------------------
+------------------------------------------------------------
 
-Load a module or wiretree plugin from &#x60;route&#x60; in disk and add it into the tree.
+Load a module or wiretree plugin from `route` in disk and add it into the tree.
 
 **Parameters:**
 
@@ -181,9 +181,9 @@ return control.home;
 
 <a name="folder"></a>
 folder( route, options )
----------------------------------------------
+------------------------------------------------------------
 
-Load and add every file in the folder &#x60;route&#x60;.
+Load and add every file in the folder `route`.
 
 **Parameters:**
 
