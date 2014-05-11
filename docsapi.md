@@ -6,6 +6,12 @@ API
 get( key )
 -----------
 
+**Parameters**:
+
+- **key**:  *String*,  name of plugin to get
+- **Return** a *Object*:  rendered plugin
+
+
 Get module or group of modules `key`.
 This method will render all required wiretree plugins into modules
 
@@ -19,17 +25,19 @@ var myModule = group.myModule;
 ```
 
 
-**Parameters**:
-
-- **key**:  *String*,  name of plugin to get
-
-**Returns** a *Object*:  rendered plugin
-
-
-
 
 add( key, value, group, localName )
--------------------------------------
+-----------------------------------
+
+**Parameters**:
+
+- **key**:  *String*,  name for the plugin
+- **value**:  *type*,  plugin
+- **group**:  *String*,  (optional) name of group to add the plugin
+- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
+- **Return** an *Array*,  list of dependencies names
+
+
 
 Add a module or wiretree plugin into the tree. Wiretree plugins won't be resolved until you get them.
 Returns a list of module dependencies in an `array`.
@@ -70,20 +78,18 @@ return control.home;
 
 
 
-**Parameters**:
-
-- **key**:  *String*,  name for the plugin
-- **value**:  *type*,  plugin
-- **group**:  *String*,  (optional) name of group to add the plugin
-- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
-
-**Returns** an *Array*,  list of dependencies names
-
-
-
-
 load( key, route, group, localName )
 ------------------------------------
+
+
+**Parameters**
+
+- **key**:  *String*,  name for the plugin
+- **route**:  *String*,  path to plugin
+- **group**:  *String*,  (optional) name of group to add the plugin
+- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
+- **Returns** an *Array*:  list of dependencies names
+
 
 Load a module or wiretree plugin from `route` in disk and add it into the tree. Wiretree plugins won't be resolved until you get them.
 Returns a list of module dependencies in an `array`.
@@ -133,20 +139,16 @@ return control.home;
 
 
 
-**Parameters**
-
-- **key**:  *String*,  name for the plugin
-- **route**:  *String*,  path to plugin
-- **group**:  *String*,  (optional) name of group to add the plugin
-- **localName**:  *String*,  (optional) keyname into the group (`localName` is `key` by default)
-
-**Returns** an *Array*:  list of dependencies names
-
-
-
-
 folder(route, options)
 ----------------------
+
+
+**Parameters**
+
+- **route**:  *String*,  path to folder
+- **options**:  *Object*
+- **Return** an *Array*:  list of keys of modules added
+
 
 Load and add every file in the folder `route`.
 
@@ -172,12 +174,3 @@ tree.folder( './myFolder', options);
 tree.get( 'myGroup');
 // => {myMod: [object Function], myPlugin: [object Function]}
 ```
-
-
-
-**Parameters**
-
-- **route**:  *String*,  path to folder
-- **options**:  *Object*
-
-**Returns** an *Array*:  list of keys of modules added
