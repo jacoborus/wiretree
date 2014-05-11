@@ -1,0 +1,20 @@
+WiretreeAPI
+===========
+
+{{#data}}{{^ignore}}
+- [{{ctx.name}}](#{{ctx.name}}){{/ignore}}{{/data}}
+
+{{#data}}{{^ignore}}
+{{ctx.name}}( {{tagList tags}} ) {#{{ctx.name}} }
+---------------------------------------------
+
+{{description.summary}}
+
+**Parameters:**
+
+{{#tags}}- **{{paramName .}}** *{{typeList types}}*: {{description}}
+{{/tags}}
+
+{{{description.body}}}
+
+{{/ignore}}{{/data}}

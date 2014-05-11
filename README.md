@@ -108,7 +108,7 @@ tree.get( 'myGroup');
 Docs & API
 ----------
 
-See [https://github.com/jacoborus/wiretree/blob/master/docsapi.md](https://github.com/jacoborus/wiretree/blob/master/docsapi.md)
+See [https://github.com/jacoborus/wiretree/blob/master/api.md](https://github.com/jacoborus/wiretree/blob/master/api.md)
 
 
 Tests

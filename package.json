@@ -1,10 +1,11 @@
 {
   "name": "wiretree",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Node.js dependency injection framework",
   "main": "lib/wiretree.js",
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha"
+    "test": "node ./node_modules/mocha/bin/mocha",
+    "build-docs": "node ./assets/docs.js"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,8 @@
   },
   "devDependencies": {
     "chai": "^1.9.1",
+    "dox": "^0.4.4",
+    "handlebars": "^2.0.0-alpha.2",
     "mocha": "^1.18.2"
   }
 }
