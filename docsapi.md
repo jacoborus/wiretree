@@ -1,7 +1,11 @@
 API
 ---
 
-
+- [Wiretree constructor](#wiretree-constructor-options-)
+- [.get](#get-key-)
+- [.add](#add-key-value-group-localname-)
+- [.load](#load-key-route-group-localname-)
+- [.folder](#folder-route-options-)
 
 Wiretree constructor( options )
 -------------------------------
