@@ -40,7 +40,6 @@ describe( 'Wiretree#load', function () {
 
 	it( 'loads a module to tree.plugins', function () {
 		expect( tree.plugins['f'].key ).to.equal( 'f' );
-		expect( tree.plugins['f'].res ).to.exist;
 	});
 
 	it( 'sets the group into the module', function () {

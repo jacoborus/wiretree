@@ -46,32 +46,25 @@ describe( 'Wiretree#add', function () {
 	});
 
 
-	it( 'returns dependencies of module added []', function () {
+	it( 'return key of module added', function () {
 		var pluginPut = tree.add( 1, 'a' );
-		expect( util.isArray( pluginPut )).to.equal( true );
-		expect( pluginPut.length ).to.equal( 0 );
+		expect( pluginPut ).to.be.a( 'object' );
 	});
 
 	it( 'adds a module to tree.plugins', function () {
 		expect( tree.plugins.a.key ).to.equal( 'a' );
-		expect( tree.plugins.a.raw ).to.equal( 1 );
-		expect( tree.plugins.a.res ).to.equal( 1 );
 	});
 
 	it( 'adds a module to tree.groups', function () {
 		tree.add( 'javascript', 'b', 'codes' );
-		expect( tree.groups.codes['b'].res ).to.equal( 'javascript' );
-	});
-
-	// wiretree plugin
-	it( 'returns the plugin dependencies names in an array', function () {
-		expect( tree.add( pluginDeps, 'd' )[0]).to.equal( 'one' );
+		expect( tree.groups.codes['b'].key ).to.equal( 'b' );
 	});
 
 	it( 'adds a plugin to tree.plugins', function () {
-		expect( tree.plugins.d.key ).to.equal( 'd' );
-		expect( tree.plugins.d.raw ).to.equal( pluginDeps.wiretree );
-		expect( tree.plugins.d.res ).to.not.exist;
+		tree.add({wiretree: function (a) {
+			return a;
+		}}, 'z');
+		expect( tree.plugins.z.key ).to.equal( 'z' );
 	});
 
 	it( 'sets the group into the plugin', function () {

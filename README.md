@@ -59,7 +59,6 @@ tree.get( 'data' );
 // => {a:1, b:2}
 
 
-
 // Add a wiretree plugin `sum` (module with dependencies)
 var sum = function (data) {
     return data.a + data.b;
@@ -70,7 +69,6 @@ tree.add( {wiretree: sum}, 'sum' );
 // the first time you get it, not when you add it.
 tree.get( 'sum' );
 // => 3
-
 
 
 // load and add a module from file
@@ -111,6 +109,7 @@ Docs & API
 ----------
 
 See [https://github.com/jacoborus/wiretree/blob/master/docsapi.md](https://github.com/jacoborus/wiretree/blob/master/docsapi.md)
+
 
 Tests
 -----

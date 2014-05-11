@@ -21,15 +21,29 @@ describe( 'Wiretree#get', function () {
 		}).to.throw( 'Module not exist: notExist' );
 	});
 
+	it( 'return modules', function () {
+		tree.add( 'module', 'mod' );
+		expect( tree.get('mod') ).equal( 'module' );
+	});
+
+	it( 'return resolved modules', function () {
+		tree.add( 'dependency', 'dep' );
+		var plug = function (dep) {
+			return dep;
+		};
+		tree.add({wiretree: plug}, 'plug' );
+		expect( tree.get('plug') ).equal( 'dependency' );
+	});
 
 	it( 'can resolve groups', function () {
-		tree.add( 'apple', 'apple', 'fruits' );
-		var salad = function (apple) {
-			return 'orange and ' + apple + ' are fruits';
+		tree.add( 'apple', 'apple', 'salad' );
+		tree.add( 'orange', 'orange', 'salad' );
+		var fruits = function (apple, orange) {
+			return orange + ' and ' + apple + ' are fruits';
 		};
-		tree.add( {wiretree: salad}, 'salad', 'fruits');
-		var fruits = tree.get('fruits');
-		expect( fruits.salad ).equal( 'orange and apple are fruits' );
+		tree.add( {wiretree: fruits}, 'fruits', 'salad');
+		var salad = tree.get('salad');
+		expect( salad.fruits ).equal( 'orange and apple are fruits' );
 	});
 
 	it( 'throw error on circular dependencies after "Maximum call stack size exceeded"', function () {
