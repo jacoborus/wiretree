@@ -1,6 +1,6 @@
 {
   "name": "wiretree",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Node.js dependency injection framework",
   "main": "lib/Wiretree.js",
   "scripts": {
@@ -25,9 +25,7 @@
   },
   "devDependencies": {
     "chai": "^1.9.1",
-    "dox": "^0.4.4",
-    "handlebars": "^2.0.0-alpha.2",
     "mocha": "^1.18.2",
-    "updox": "0.0.1"
+    "updox": "0.0.2"
   }
 }
