@@ -112,6 +112,9 @@ h2 {
     font-size: 32px;
     border-bottom: 2px dotted #4b9f4b;
 }
+h1 img{
+    width: 360px;
+}
 h3 {
     margin-top: 3em;
     font-size: 26px;
