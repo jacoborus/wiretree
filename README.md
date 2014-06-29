@@ -5,6 +5,8 @@ Elegant dependency injection framework for Node.js.
 
 [wiretree.micronube.com](http://wiretree.micronube.com/)
 
+[![Build Status](https://travis-ci.org/jacoborus/wiretree.svg?branch=master)](https://travis-ci.org/jacoborus/wiretree)
+
 
 Features
 --------
