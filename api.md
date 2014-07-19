@@ -37,11 +37,10 @@ Passing options as argument
 ```javascript
 var Wiretree = require('wiretree');
 var tree = new Wiretree({
-   rootpath:'path/to/rootFolder',
-   keyname: '_tree'
+rootpath:'path/to/rootFolder',
+keyname: '_tree'
 });
 ```
-
 
 <a name="get"></a>
 get( key )
@@ -64,7 +63,6 @@ tree.get( 'myModule' );
 var group = tree.get( 'myGroup' );
 var myModule = group.myModule;
 ```
-
 
 <a name="add"></a>
 add( key, value, group, localName )
@@ -116,7 +114,6 @@ return control.home;
 // => 1
 ```
 
-
 <a name="load"></a>
 load( key, route, group, localName )
 ------------------------------------------------------------
@@ -140,14 +137,13 @@ Wiretree.load just checks that the files exist and add it to the tree. Modules a
 **`module`**.js:
 ```javascript
 module.exports = function () {
-    return 2;
+return 2;
 };
 ```
-
 **`plugin`**.js:
 ```javascript
 exports.wiretree = function (mod) {
-    return mod + 2;
+return mod + 2;
 };
 ```
 
@@ -178,7 +174,6 @@ return control.home;
 // => 1
 ```
 
-
 <a name="folder"></a>
 folder( route, options )
 ------------------------------------------------------------
@@ -203,17 +198,19 @@ tree.folder( './myFolder' );
 // => ['myMod', 'myPlugin']
 
 var options = {
-    group: 'myGroup',
-    prefix: 'pre',
-    suffix: 'Ctrl'
+group: 'myGroup',
+prefix: 'pre',
+suffix: 'Ctrl',
+transform: function (key) {
+return key + 'Test';
+}
 }
 
 tree.folder( './myFolder', options);
-// => ['preMyModCtrl', 'preMyPluginCtrl']
+// => ['preMyModTestCtrl', 'preMyPluginTestCtrl']
 
 tree.get( 'myGroup');
-// => {myMod: [object Function], myPlugin: [object Function]}
+// => {myModTest: [object Function], myPluginTest: [object Function]}
 ```
-
 
 

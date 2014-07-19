@@ -74,10 +74,10 @@ describe( 'Wiretree#folder', function () {
 
 	it( 'accepts middleware transformations', function () {
 		var transform = function (text) {
-			return text + '2';
+			return text + 'Test';
 		};
-		tree.folder( './test/assets/folder', {group: 'transforms', transform: transform});
-		expect( tree.plugins.addon2.key ).to.equal( 'addon2' );
+		tree.folder( './test/assets/transform', {group: 'transforms', transform: transform});
+		expect( tree.plugins.trTest.key ).to.equal( 'trTest' );
 	});
 
 	it( 'accepts local names in groups', function () {
