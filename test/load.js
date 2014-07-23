@@ -35,7 +35,7 @@ describe( 'Wiretree#load', function () {
 
 
 	it( 'returns the module schema generated', function () {
-		expect( tree.load( './test/assets/module.js', 'f' )['key']).to.equal( 'f' );
+		expect( tree.load( './test/assets/module.js', 'f' ).key ).to.equal( 'f' );
 	});
 
 	it( 'loads a module to tree.plugins', function () {
@@ -47,6 +47,11 @@ describe( 'Wiretree#load', function () {
 		expect( tree.plugins['e'].group ).to.equal( 'codes' );
 	});
 
+	it( 'uses localName', function () {
+		var pluginAddGroup = tree.load( './test/assets/local.js', 'k', 'codes', 'localname' );
+		expect( tree.plugins['k'].group ).to.equal( 'codes' );
+		expect( tree.groups.codes.localname.group ).to.equal( 'codes' );
+	});
 
 	// plugion with depedencies
 	it( 'returns the module schema generated', function () {
@@ -62,6 +67,7 @@ describe( 'Wiretree#load', function () {
 		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'h', 'codes' );
 		expect( tree.plugins['h'].group ).to.equal( 'codes' );
 	});
+
 
 });
 

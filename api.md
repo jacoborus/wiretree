@@ -115,15 +115,15 @@ return control.home;
 ```
 
 <a name="load"></a>
-load( key, route, group, localName )
+load( route, key, group, localName )
 ------------------------------------------------------------
 
 Load a module or wiretree plugin from `route` in disk and add it into the tree.
 
 **Parameters:**
 
-- **key** *String*: name for the plugin
 - **route** *String*: path to plugin
+- **key** *String*: name for the plugin
 - **group** *String*: (optional) name of group to add the plugin
 - **localName** *String*: keyname into the group (is key by default)
 - **Return** *Array*: list of dependencies names
