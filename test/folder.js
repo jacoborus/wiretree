@@ -62,26 +62,27 @@ describe( 'Wiretree#folder', function () {
 	});
 
 	// add folder with options
-	tree.folder( './test/assets/folder', {group: 'testgroup', prefix: 'pre', suffix: 'suf'});
+	var tree2 = new Wiretree();
+	tree2.folder( './test/assets/folder', {group: 'testgroup', prefix: 'pre', suffix: 'suf'});
 
-	it( 'sets the group into the modules with prefixes and sufixes', function () {
-		expect( tree.plugins.preAddonSuf.group ).to.equal( 'testgroup' );
+	it( 'sets the group into the modules without prefixes and sufixes', function () {
+		expect( tree2.plugins.preAddonSuf.group ).to.equal( 'testgroup' );
 	});
 
-	it( 'create group in tree if not exist', function () {
-		expect( tree.groups.testgroup ).to.exist;
+	it( 'create group in tree2 if not exist', function () {
+		expect( tree2.groups.testgroup ).to.exist;
 	});
 
 	it( 'accepts middleware transformations', function () {
 		var transform = function (text) {
 			return text + 'Test';
 		};
-		tree.folder( './test/assets/transform', {group: 'transforms', transform: transform});
-		expect( tree.plugins.trTest.key ).to.equal( 'trTest' );
+		tree2.folder( './test/assets/transform', {group: 'transforms', transform: transform});
+		expect( tree2.plugins.trTest.key ).to.equal( 'trTest' );
 	});
 
 	it( 'accepts local names in groups', function () {
-		expect( tree.plugins.preAddonSuf.localName ).to.equal( 'addon' );
+		expect( tree2.get( 'testgroup' ).addon ).to.equal( 'Sum is Addon2 says hello!!!!' );
 	});
 });
 

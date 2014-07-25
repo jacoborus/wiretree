@@ -1,5 +1,5 @@
 'use strict';
 
-module.exports.wiretree = function (sum) {
-	return 'Sum is ' + sum + '!!';
+exports.wiretree = function (preAddon2Suf) {
+	return 'Sum is ' + preAddon2Suf + '!!';
 };
