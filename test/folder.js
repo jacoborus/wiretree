@@ -43,19 +43,13 @@ describe( 'Wiretree#folder', function () {
 		}).to.throw( 'Bad argument: options.group' );
 	});
 
-	it( 'returns the module names in an array ignoring hidden files', function () {
-		expect( tree.folder( './test/assets/folder' )[0]).to.equal( 'addon' );
-	});
-
 	it( 'throws error when module name starts with number', function () {
 		expect( function () {
 			tree.folder( './test/assets/folderError' );
 		}).to.throw( 'Module name can\'t start with number: 1error' );
 	});
 
-	it( 'ignore folders under loaded folder', function () {
-		expect( tree.folder( './test/assets/nestedFolders' ).length).to.equal( 0 );
-	});
+	tree.folder( './test/assets/folder' );
 
 	it( 'adds the modules to tree.plugins', function (){
 		expect( tree.plugins['addon'].key ).to.equal( 'addon' );
@@ -83,6 +77,15 @@ describe( 'Wiretree#folder', function () {
 
 	it( 'accepts local names in groups', function () {
 		expect( tree2.get( 'testgroup' ).addon ).to.equal( 'Sum is Addon2 says hello!!!!' );
+	});
+
+	it( 'ignore folders under loaded folder', function () {
+		tree.folder( './test/assets/nestedFolders', {
+			group: 'zero'
+		});
+		console.log(tree.get('zero').length);
+		expect( tree.get('zero') ).to.be.a( 'object' );
+		expect( typeof tree.get('zero').length ).to.equal( 'undefined' );
 	});
 });
 

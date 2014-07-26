@@ -34,8 +34,8 @@ describe( 'Wiretree#load', function () {
 	});
 
 
-	it( 'returns the module schema generated', function () {
-		expect( tree.load( './test/assets/module.js', 'f' ).key ).to.equal( 'f' );
+	it( 'returns the tree', function () {
+		expect( tree.load( './test/assets/module.js', 'f' ).plugins ).to.exist;
 	});
 
 	it( 'loads a module to tree.plugins', function () {
@@ -54,9 +54,7 @@ describe( 'Wiretree#load', function () {
 	});
 
 	// plugin with depedencies
-	it( 'returns the module schema generated', function () {
-		expect( tree.load( './test/assets/plugin.js', 'g' )['key']).to.equal( 'g' );
-	});
+	tree.load( './test/assets/plugin.js', 'g' );
 
 	it( 'loads a module to tree.plugins', function () {
 		expect( tree.plugins['g'].key ).to.equal( 'g' );
@@ -67,7 +65,5 @@ describe( 'Wiretree#load', function () {
 		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'h', 'codes' );
 		expect( tree.plugins['h'].group ).to.equal( 'codes' );
 	});
-
-
 });
 

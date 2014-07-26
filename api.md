@@ -7,6 +7,7 @@ Wiretree API
 - [add](#add)
 - [load](#load)
 - [folder](#folder)
+- [exec](#exec)
 
 <a name="Wiretree"></a>
 Wiretree( options )
@@ -77,7 +78,7 @@ Returns a list of module dependencies in an `array`.
 - **value** *type*: plugin
 - **group** *String*: (optional) name of group to add the plugin
 - **localName** *String*: keyname into the group (is key by default)
-- **Return** *Array*: list of dependencies names
+- **Return** *Object*: tree
 
 
 **Example**:
@@ -126,7 +127,7 @@ Load a module or wiretree plugin from `route` in disk and add it into the tree.
 - **key** *String*: name for the plugin
 - **group** *String*: (optional) name of group to add the plugin
 - **localName** *String*: keyname into the group (is key by default)
-- **Return** *Array*: list of dependencies names
+- **Return** *Object*: tree
 
 
 Wiretree.load just checks that the files exist and add it to the tree. Modules and wiretree plugins files won't be loaded and resolved until you get them.
@@ -184,7 +185,7 @@ Load and add every file in the folder `route`.
 
 - **route** *String*: path to folder
 - **options** *Object*: 
-- **Return** *Array*: list of keys of modules added
+- **Return** *Object*: tree
 
 
 Filename without extension is `key` and `localName` for every file, but prefixes and suffixes can be
@@ -212,5 +213,18 @@ tree.folder( './myFolder', options);
 tree.get( 'myGroup');
 // => {myModTest: [object Function], myPluginTest: [object Function]}
 ```
+
+<a name="exec"></a>
+exec( fn )
+------------------------------------------------------------
+
+Executes a function
+
+**Parameters:**
+
+- **fn** *Function*: function
+
+
+
 
 
