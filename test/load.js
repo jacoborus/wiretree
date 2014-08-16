@@ -23,14 +23,14 @@ describe( 'Wiretree#load', function () {
 
 	it( 'throws errors on bad argument: group', function () {
 		expect( function () {
-			tree.load( './test/assets/module.js', 'f', 3 );
+			tree.load( './test/assets/module.js', 'f', { group: 3 });
 		}).to.throw( 'Bad argument: group' );
 	});
 
-	it( 'throws errors on bad argument: localName', function () {
+	it( 'throws errors on bad argument: localname', function () {
 		expect( function () {
-			tree.load( './test/assets/module.js', 'f', 'hello', 3 );
-		}).to.throw( 'Bad argument: localName' );
+			tree.load( './test/assets/module.js', 'f', { group: 'hello', localname: 3 });
+		}).to.throw( 'Bad argument: localname' );
 	});
 
 
@@ -43,12 +43,12 @@ describe( 'Wiretree#load', function () {
 	});
 
 	it( 'sets the group into the module', function () {
-		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'e', 'codes' );
+		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'e', { group: 'codes' });
 		expect( tree.plugins['e'].group ).to.equal( 'codes' );
 	});
 
-	it( 'uses localName', function () {
-		var pluginAddGroup = tree.load( './test/assets/local.js', 'k', 'codes', 'localname' );
+	it( 'uses localname', function () {
+		var pluginAddGroup = tree.load( './test/assets/local.js', 'k', { group: 'codes', localname: 'localname' });
 		expect( tree.plugins['k'].group ).to.equal( 'codes' );
 		expect( tree.groups.codes.localname.key ).to.equal( 'k' );
 	});
@@ -62,7 +62,7 @@ describe( 'Wiretree#load', function () {
 	});
 
 	it( 'sets the group into the module', function () {
-		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'h', 'codes' );
+		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'h', { group: 'codes' });
 		expect( tree.plugins['h'].group ).to.equal( 'codes' );
 	});
 });

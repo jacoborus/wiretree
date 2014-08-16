@@ -11,13 +11,13 @@ var Wiretree = require('..');
 describe( 'Wiretree#add', function () {
 	var tree = new Wiretree();
 
-	var plugin = function (){
+	var plugin = function () {
 		return 'I\'m a module';
 	};
 
 	var pluginDeps = {
-		wiretree: function (one, two) {
-			return one + two;
+		wiretree: function (a, b) {
+			return a + b;
 		}
 	};
 
@@ -35,14 +35,14 @@ describe( 'Wiretree#add', function () {
 
 	it( 'throws errors on bad argument: group', function () {
 		expect( function () {
-			tree.add( plugin, 'd', 3 );
+			tree.add( plugin, 'd', { group: 3 });
 		}).to.throw( 'Bad argument: group' );
 	});
 
-	it( 'throws errors on bad argument: localName', function () {
+	it( 'throws errors on bad argument: localname', function () {
 		expect( function () {
-			tree.add( plugin, 'd', 'collection', 3 );
-		}).to.throw( 'Bad argument: localName' );
+			tree.add( plugin, 'd', { group: 'collection', localname: 3 });
+		}).to.throw( 'Bad argument: localname' );
 	});
 
 
@@ -56,7 +56,7 @@ describe( 'Wiretree#add', function () {
 	});
 
 	it( 'adds a module to tree.groups', function () {
-		tree.add( 'javascript', 'b', 'codes' );
+		tree.add( 'javascript', 'b', { group: 'codes' });
 		expect( tree.groups.codes['b'].key ).to.equal( 'b' );
 	});
 
@@ -68,7 +68,15 @@ describe( 'Wiretree#add', function () {
 	});
 
 	it( 'sets the group into the plugin', function () {
-		tree.add( pluginDeps, 'e', 'codes' );
+		tree.add( pluginDeps, 'e', { group: 'codes' });
 		expect( tree.plugins['e'].group ).to.equal( 'codes' );
+	});
+
+	it( 'exclude plugin from mainTree when option hide', function () {
+		tree.add( plugin, 'hidden', { group: 'codes', hide: true })
+		.exec( function() {
+			expect( tree.get('codes').hidden ).to.be.a( 'function' );
+			expect( tree.mainTree.hidden ).to.not.exist;
+		});
 	});
 });

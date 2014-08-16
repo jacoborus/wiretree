@@ -31,7 +31,7 @@ describe( 'Wiretree#get', function () {
 		var plug = function (dep) {
 			return dep;
 		};
-		tree.add({wiretree: plug}, 'plug' );
+		tree.add({ wiretree: plug }, 'plug' );
 		expect( tree.get('plug') ).equal( 'dependency' );
 	});
 
@@ -41,7 +41,7 @@ describe( 'Wiretree#get', function () {
 		var fruits = function (apple, orange) {
 			return orange + ' and ' + apple + ' are fruits';
 		};
-		tree.add( {wiretree: fruits}, 'fruits', 'salad');
+		tree.add({ wiretree: fruits }, 'fruits', { group: 'salad' });
 		var salad = tree.get('salad');
 		expect( salad.fruits ).equal( 'orange and apple are fruits' );
 	});
@@ -53,8 +53,8 @@ describe( 'Wiretree#get', function () {
 		var two = function (one) {
 			return one + 2;
 		};
-		tree.add( {wiretree: one}, 'one' );
-		tree.add( {wiretree: two}, 'two' );
+		tree.add({ wiretree: one }, 'one' );
+		tree.add({ wiretree: two }, 'two' );
 		expect( function () {
 			tree.get( 'one' );
 		}).to.throw( 'Circular dependencies: one' );
@@ -74,9 +74,9 @@ describe( 'Wiretree#get', function () {
 			return hello() + one + two;
 		};
 		tree.add( hello, 'hello' );
-		tree.add( {wiretree: one}, 'one' );
-		tree.add( {wiretree: two}, 'two' );
-		tree.add( {wiretree: t}, 't' );
+		tree.add({ wiretree: one }, 'one' );
+		tree.add({ wiretree: two }, 'two' );
+		tree.add({ wiretree: t }, 't' );
 		var t2 = tree.get( 't' );
 		expect( t2 ).to.equal( 'hellohellohello' );
 	});
