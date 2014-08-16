@@ -38,8 +38,8 @@ Passing options as argument
 ```javascript
 var Wiretree = require('wiretree');
 var tree = new Wiretree({
-rootpath:'path/to/rootFolder',
-keyname: '_tree'
+    rootpath:'path/to/rootFolder',
+    keyname: '_tree'
 });
 ```
 
@@ -114,8 +114,8 @@ Passing a `group` will add the module to it. `localname` is the key for the grou
 
 ```javascript
 tree.add( 1, 'homeCtrl', {
-group: 'control',
-localname: 'home'
+    group: 'control',
+    localname: 'home'
 });
 tree.get( 'homeCtrl' );
 // => 1
@@ -154,13 +154,13 @@ All options are optional:
 **`module`**.js:
 ```javascript
 module.exports = function () {
-return 2;
+    return 2;
 };
 ```
 **`plugin`**.js:
 ```javascript
 exports.wiretree = function (mod) {
-return mod + 2;
+    return mod + 2;
 };
 ```
 
@@ -183,8 +183,8 @@ Passing a `group` will add the module to it. `localname` is the key for the grou
 
 ```javascript
 tree.load( './module.js', 'homeCtrl', {
-group: 'control',
-localname: 'home'
+    group: 'control',
+    localname: 'home'
 });
 tree.get( 'homeCtrl' );
 // => 1
@@ -224,13 +224,13 @@ tree.folder( './myFolder' );
 // => ['myMod', 'myPlugin']
 
 var options = {
-hide: false,
-group: 'myGroup',
-prefix: 'pre',
-suffix: 'Ctrl',
-transform: function (key) {
-return key + 'Test';
-}
+    hide: false,
+    group: 'myGroup',
+    prefix: 'pre',
+    suffix: 'Ctrl',
+    transform: function (key) {
+        return key + 'Test';
+    }
 }
 
 tree.folder( './myFolder', options);
