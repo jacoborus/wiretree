@@ -83,7 +83,6 @@ describe( 'Wiretree#folder', function () {
 		tree.folder( './test/assets/nestedFolders', {
 			group: 'zero'
 		});
-		console.log(tree.get('zero').length);
 		expect( tree.get('zero') ).to.be.a( 'object' );
 		expect( typeof tree.get('zero').length ).to.equal( 'undefined' );
 	});
