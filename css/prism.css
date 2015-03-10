@@ -40,7 +40,6 @@ pre[class*="language-"] {
 code[class*="language"] {
   max-height:29em;
   display:block;
-  overflow:scroll;
 }
 
 /* Margin bottom to accomodate shadow */
@@ -175,4 +174,3 @@ pre[class*="language-"]:after {
 .token.lf:before {
   color: #e0d7d1;
 }
-

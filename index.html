@@ -1,143 +1,343 @@
-<!DOCTYPE html>
-<html class="no-js">
-	<head>
-		<meta charset="utf-8">
-		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-		<title>Wiretree - Elegant dependency injection framework for Node.js</title>
-		<meta name="description" content="Wiretree - Elegant dependency injection framework for Node.js">
-		<meta name="viewport" content="width=device-width">
-		<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700' rel='stylesheet' type='text/css'>
-		<link rel="stylesheet" href="./css/prism.css">
-		<link rel="stylesheet" href="css/normalize.min.css">
-		<style>#forkongithub a{background:#4b9f4b;color:#fff;text-decoration:none;font-family:arial, sans-serif;text-align:center;font-weight:bold;padding:5px 40px;font-size:1rem;line-height:2rem;position:relative;transition:0.5s;z-index:9999999999;border:none;}#forkongithub a:hover{background:#fff;color:#4b9f4b;}#forkongithub a::before,#forkongithub a::after{content:"";width:100%;display:block;position:absolute;top:1px;left:0;height:1px;background:#fff;}#forkongithub a::after{bottom:1px;top:auto;}@media screen and (min-width:800px){#forkongithub{position:absolute;display:block;top:0;left:0;width:200px;overflow:hidden;height:200px;}#forkongithub a{width:200px;position:absolute;top:60px;left:-60px;transform:rotate(-45deg);-webkit-transform:rotate(-45deg);box-shadow:4px 4px 10px rgba(0,0,0,0.8);}}</style>
-		<link rel="stylesheet" href="css/main.css">
-		<link rel="shortcut icon" href="wiretree.ico?v=2" />
+<!doctype html>
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>wiretree - Lightweight email server with mustache templates support for messages</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-		<!--[if lt IE 9]>
-			<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-			<script>window.html5 || document.write('<script src="js/vendor/html5shiv.js"><\/script>')</script>
-		<![endif]-->
-	</head>
-	<body>
+    <link rel="stylesheet" href="css/normalize.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link href="css/prism.css" rel="stylesheet" />
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,800,600,700' rel='stylesheet' type='text/css'>
+<style>#forkongithub a{background:#483e37;color:#fff;text-decoration:none;font-family:arial,sans-serif;text-align:center;font-weight:bold;padding:5px 40px;font-size:1rem;line-height:2rem;position:relative;transition:0.5s;}#forkongithub a:hover{background:#fff;color:#483e37;}#forkongithub a::before,#forkongithub a::after{content:"";width:100%;display:block;position:absolute;top:1px;left:0;height:1px;background:hsl(76, 21%, 52%);}#forkongithub a::after{bottom:1px;top:auto;}@media screen and (min-width:800px){#forkongithub{position:absolute;display:block;top:0;left:0;width:200px;overflow:hidden;height:200px;z-index:9999;}#forkongithub a{width:200px;position:absolute;top:60px;left:-60px;transform:rotate(-45deg);-webkit-transform:rotate(-45deg);-ms-transform:rotate(-45deg);-moz-transform:rotate(-45deg);-o-transform:rotate(-45deg);box-shadow:4px 4px 10px rgba(0,0,0,0.8);}}</style>
+    <!--[if lt IE 9]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+        <script>window.html5 || document.write('<script src="js/vendor/html5shiv.js"><\/script>')</script>
+    <![endif]-->
+</head>
+<body>
+<aside id="forkongithub"><a href="https://github.com/jacoborus/wiretree">Fork me on GitHub</a></aside>
+<div class="container">
+<h1 id="title"><img src="wiretree-logo.svg" alt="wiretree logo" title="wiretree logo"></h1>
 
-		<span id="forkongithub"><a href="https://github.com/jacoborus/wiretree">Fork me on GitHub</a></span>
+<p class="subtitle">Elegant dependency injection framework for Node.js.</p>
 
-		<div class="container">
-			<h1 id="wiretree">
-				<img src="https://raw.githubusercontent.com/jacoborus/wiretree/master/brand/wiretree.png" alt="Wiretree logo">
-			</h1>
-			<p class="center">Elegant dependency injection framework for Node.js</p>
+<div class="githubs">
+    <a class="github-button" href="https://github.com/jacoborus/wiretree" data-icon="octicon-star" data-count-href="/jacoborus/wiretree/stargazers" data-count-api="/repos/jacoborus/wiretree#stargazers_count">Star</a>
+    <a class="github-button" href="https://github.com/jacoborus/wiretree/fork" data-icon="octicon-git-branch" data-count-href="/jacoborus/wiretree/network" data-count-api="/repos/jacoborus/wiretree#forks_count">Fork</a>
+    <a class="github-button" href="https://github.com/jacoborus">Follow @jacoborus</a>
+</div>
+<article class="markdown-body entry-content" itemprop="mainContentOfPage">
 
-			<br>
-			<div class="github">
-				<iframe src="http://ghbtns.com/github-btn.html?user=jacoborus&repo=wiretree&type=watch&count=true&size=large" height="30" width="150" frameborder="0" scrolling="0" style="width:150px; height: 30px;" allowTransparency="true"></iframe>
-				<iframe src="http://ghbtns.com/github-btn.html?user=jacoborus&repo=wiretree&type=fork&count=true&size=large" height="30" width="140" frameborder="0" scrolling="0" style="width:140px; height: 30px;" allowTransparency="true"></iframe>
-			</div>
-  			<br>
-			<h2 id="features">Features</h2>
-<ul>
-<li>Clean plugin syntax (just add dependencies as arguments)</li>
-<li>Load files and render modules on demand</li>
-<li>Group modules</li>
-<li>Add functions as modules or wiretree plugins (modules with dependencies)</li>
-<li>Add modules and plugins from files</li>
-<li>Add entire folders as group, as individual files or both</li>
-<li>Add prefixes and suffixes to module keys for easy handling</li>
+
+<p>Wiretree creates a tree with your framework configuration, then it will start your app resolving each plugin of tree by passing one or more dependencies to it. Wiretree enables to extend apps by adding more plugins without changing configuration.</p>
+
+<p>Plugins can be simple node.js modules or preconfigured (at resolve time) ones, they can require another plugins or modules as dependencies, as well as return their value asynchronously.</p>
+
+<p>A Wiretree plugin constructor is a function exposed as 'wiretree' in a nodejs module, its dependencies are declared as its arguments, and the value of resolved plugin is the returned value of constructor function:</p>
+<pre><code class="language-javascript">exports.wiretree = function (dependencyPlugin) {
+    var myPlugin;
+    // do something with myPlugin and dependencyPlugin
+    // ...
+    // and return your plugin
+    return myPlugin;
+};</code></pre>
+
+<p>Plugin constructors can be resolved asynchronously by passing its value through <code>wtDone</code> (<code>wtDone</code> is injected by Wiretree):</p>
+
+<pre><code class="language-javascript">exports.wiretree = function (wtDone) {
+    doSomeAsyncOp( function (value) {
+        // expose plugin
+        wtDone( value );
+    });
+};</code></pre>
+
+
+<h2>
+<a id="user-content-installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<pre class="pretty"><code>npm install wiretree</code></pre>
+
+<h2>
+<a id="user-content-api" class="anchor" href="#api" aria-hidden="true"><span class="octicon octicon-link"></span></a>API</h2>
+
+<ul class="task-list">
+<li><a href="#Wiretree">Wiretree</a></li>
+<li><a href="#then">then</a></li>
+<li><a href="#add">add</a></li>
+<li><a href="#load">load</a></li>
+<li><a href="#folder">folder</a></li>
+<li><a href="#resolve">resolve</a></li>
 </ul>
-<h2 id="installation">Installation</h2>
-<pre><code>npm install wiretree
-</code></pre><h2 id="api">API</h2>
-<p>See <strong><a href="api.html">API DOCS</a></strong></p>
-<h2 id="example-">Example:</h2>
-<p>A typical module:</p>
-<p><strong><code>module.js</code>:</strong></p>
-<pre><code class="language-javascript">module.exports = function () {
-    return &#39;This is a module&#39;;
-}
-</code></pre>
-<p>A Wiretree plugin is a function exposed as &#39;module.exports.wiretree&#39;, with its dependencies names declared as arguments. Plugins returns the rendered module. If your plugin doesn&#39;t need to return a module simply return <code>true</code> in order to continue (this is important for async loading).</p>
-<p><strong><code>plugin.js</code>:</strong></p>
-<pre><code class="language-javascript">exports.wiretree = function (sum) {
-    return &#39;result is &#39; + sum;
-}
-</code></pre>
-<p><strong><code>index.js</code>:</strong></p>
-<pre><code class="language-javascript">var Wiretree = require( &#39;wiretree&#39; );
 
-// create a tree passing root path as parameter
-var tree = new Wiretree( __dirname );
+<p><a name="user-content-Wiretree"></a></p>
+
+<h3>
+<a id="user-content-wiretree-folderpath-" class="anchor" href="#wiretree-folderpath-" aria-hidden="true"><span class="octicon octicon-link"></span></a>Wiretree( folderPath )</h3>
+
+<p>Wiretree constructor.
+Creates new tree</p>
+
+<p><strong>Parameters:</strong></p>
+
+<ul class="task-list">
+<li>
+<strong>folderPath</strong> <em>String</em>: path to root folder</li>
+</ul>
+
+<p>Example:</p>
+
+<pre><code class="language-javascript">var Wiretree = require('wiretree');
+var tree = new Wiretree( 'path/to/rootFolder');</code></pre>
 
 
-// add module `data` (without dependencies) and then get it
-tree.add( {a:1, b:2}, &#39;data&#39; );
-tree.get( &#39;data&#39; );
-// =&gt; {a:1, b:2}
+<p><a name="user-content-then"></a></p>
+
+<h3>
+<a id="user-content-then-fn-" class="anchor" href="#then-fn-" aria-hidden="true"><span class="octicon octicon-link"></span></a>then( fn )</h3>
+
+<p>Executes a function and then return the tree</p>
+
+<p><strong>Parameters:</strong></p>
+
+<ul class="task-list">
+<li>
+<strong>fn</strong> <em>Function</em>: function</li>
+<li>
+<strong>Return</strong> <em>Object</em>: tree</li>
+</ul>
+
+<p>Example:</p>
+
+<pre><code class="language-javascript">tree
+.add('mod', 1)
+.then( function () {
+    console.log( 'mod is added!');
+})
+.add(.....)
+........</code></pre>
 
 
-// Add a wiretree plugin `sum` (module with dependencies)
-var sum = function (data) {
-    return data.a + data.b;
+<p><a name="user-content-add"></a></p>
+
+<h3>
+<a id="user-content-add-key-value-options-" class="anchor" href="#add-key-value-options-" aria-hidden="true"><span class="octicon octicon-link"></span></a>add( key, value, options )</h3>
+
+<p>Add a module or wiretree plugin into the tree.
+Returns tree object</p>
+
+<p><strong>Parameters:</strong></p>
+
+<ul class="task-list">
+<li>
+<strong>key</strong> <em>String</em>: name for the plugin</li>
+<li>
+<strong>value</strong> <em>Number|String|Boolean|Object|Function</em>: plugin</li>
+<li>
+<strong>options</strong> <em>Object</em>: (optional) see options</li>
+<li>
+<strong>Return</strong> <em>Object</em>: tree</li>
+</ul>
+
+<p>All options are optional:</p>
+
+<ul class="task-list">
+<li>
+<strong><code>group</code></strong> <em>String</em>: group to add the plugin</li>
+<li>
+<strong><code>localname</code></strong> <em>Function</em>: keyname into its group. Only works when group is passed</li>
+<li>
+<strong><code>hidden</code></strong> <em>Boolean</em>: expose only in group, not in tree root. Only works when group is passed</li>
+</ul>
+
+<p><strong>Example</strong>:</p>
+
+
+<pre><code class="language-javascript">// add a simple module
+tree.add( 'one', 1 );
+// now 'one' in tree equals 1
+
+// add a Wiretree plugin (a module with dependencies from tree)
+.add( 'plugin', {
+    wiretree: function (one) {
+        return one() + 2;
+    }
+});
+// now 'plugin in tree equals 3'</code></pre>
+
+<p><strong>Async plugin example</strong>:</p>
+
+<p>Expose plugin through 'wtDone' dependency instead returning it from function</p>
+
+<pre><code class="language-javascript">tree.add( 'asyncPlugin', {
+    wiretree: function (wtDone) {
+        doSomethingAsync( function (value) {
+            wtDone( value );
+        });
+    }
+});</code></pre>
+
+
+<p><strong>Group example</strong>:</p>
+
+<p>Passing a <code>group</code> will add the module to it. <code>localName</code> is how plugin will be exposed as into the group. <code>localName</code> is passed <code>key</code> by default</p>
+
+<pre><code class="language-javascript">tree.add( 'homeCtrl', 1, {
+    group: 'control',
+    localname: 'home'
+});
+// plugin is exposed as 'homeCtrl' in main tree, and as 'home' in 'control' group
+// so you can inject it into other modules through main tree:
+var otherPlugin = function (homeCtrl) {
+    // do something with homeCtrl
 };
-tree.add( {wiretree: sum}, &#39;sum&#39; );
+// or through its group:
+var anotherPlugin = function (control) {
+var homeCtrl = control.home;
+    // do something with homeCtrl
+};</code></pre>
 
-// A Wiretree plugin will be rendered with its dependencies into a typical module
-// the first time you get it, not when you add it.
-tree.get( &#39;sum&#39; );
-// =&gt; 3
+<p><a name="user-content-load"></a></p>
+
+<h3>
+<a id="user-content-load-filepath-options-" class="anchor" href="#load-filepath-options-" aria-hidden="true"><span class="octicon octicon-link"></span></a>load( filePath, options )</h3>
+
+<p>Add a plugin to tree from a file</p>
+
+<p><strong>Parameters:</strong></p>
+
+<ul class="task-list">
+<li>
+<strong>filePath</strong> <em>String</em>: path to js file</li>
+<li>
+<strong>options</strong> <em>Object</em>: exposing options. See <strong>options</strong> below</li>
+<li>
+<strong>Return</strong> <em>Object</em>: tree</li>
+</ul>
+
+<p><em>Options:</em></p>
+
+<ul class="task-list">
+<li>
+<strong><code>key</code></strong> <em>String</em>: use this value instead filename as plugin keyname in main tree.</li>
+<li>
+<strong><code>group</code></strong> <em>String</em>: group to add the plugin</li>
+<li>
+<strong><code>localname</code></strong> <em>String</em>: use this value as keyname into its group. (Only works when group is passed)</li>
+<li>
+<strong><code>hidden</code></strong> <em>Boolean</em>: expose only in group, not in tree root. (Only works when group is passed)</li>
+</ul>
+
+<p>Add the plugin as 'user' into the tree:</p>
+
+<pre><code class="language-javascript">tree.load( './user.js');</code></pre>
+
+<p>Add the plugin as 'userCtrl' into the tree and as 'user' into 'controllers' group:</p>
+
+<pre><code class="language-javascript">tree.load( './user.js', {
+    key: 'userCtrl'
+    group: 'controllers',
+    localname: 'user'
+});</code></pre>
 
 
-// load and add a module from file
-tree.load( &#39;./module.js&#39;, &#39;mod&#39; );
+<p><a name="user-content-folder"></a></p>
 
-var mod = tree.get( &#39;mod&#39; );
-mod();
-// =&gt; &#39;This is a module&#39;
+<h3>
+<a id="user-content-folder-folderpath-options-" class="anchor" href="#folder-folderpath-options-" aria-hidden="true"><span class="octicon octicon-link"></span></a>folder( folderPath, options )</h3>
 
+<p>Load every javascript file in <code>folderPath</code>.</p>
 
-// load and add a wiretree plugin
-tree.load( &#39;./plugin.js&#39;, &#39;result&#39; );
+<p><strong>Parameters:</strong></p>
 
-// get a resolved a module (this resolves its dependencies too)
-tree.get( &#39;result&#39; );
-// =&gt; &#39;result is 3&#39;
-</code></pre>
-<p><strong>A complex example</strong>:
-Import an entire folder, sets its plugins and modules into groups and rename the keys with the provided prefix and suffix:</p>
-<pre><code class="language-javascript">var options = {
-    group: &#39;myGroup&#39;,
-    prefix: &#39;pre&#39;,
-    suffix: &#39;Ctrl&#39;
-}
+<ul class="task-list">
+<li>
+<strong>folderPath</strong> <em>String</em>: path to folder</li>
+<li>
+<strong>options</strong> <em>Object</em>: All options are optional. See options below</li>
+<li>
+<strong>Return</strong> <em>Object</em>: tree</li>
+</ul>
 
-// folder method return the keynames of its plugins/modules
-tree.folder( &#39;./myFolder&#39;, options);
-// =&gt; [&#39;preMyModCtrl&#39;, &#39;preMyPluginCtrl&#39;]
+<p><em>Options</em>:</p>
 
-tree.get( &#39;myGroup&#39;);
-// =&gt; {myMod: [object Function], myPlugin: [object Function]}
-</code></pre>
-<h2 id="tests">Tests</h2>
-<pre><code>npm install -d &amp;&amp; npm test
-</code></pre><h2 id="build-api-docs">Build API docs</h2>
-<pre><code>npm install -d &amp;&amp; npm run build-docs
-</code></pre><p><br><br></p>
+<ul class="task-list">
+<li>
+<strong><code>group</code></strong> <em>String</em>: group to add the plugin</li>
+<li>
+<strong><code>transform</code></strong> <em>Function</em>: get keyname passed as argument and return new keyname</li>
+<li>
+<strong><code>prefix</code></strong> <em>String</em>: add prefix to keyname</li>
+<li>
+<strong><code>suffix</code></strong> <em>String</em>: add suffix to keyname</li>
+<li>
+<strong><code>hidden</code></strong> <em>Boolean</em>: expose only in group, not in tree root. Only works when group is passed</li>
+</ul>
+
+<p>Example: load all javascript files in 'controllers' folder into 'controllers' group and expose them in main tree with 'Ctrl' suffix</p>
+
+<pre><code class="language-javascript">tree.load( './controllers', {
+    group: 'controllers',
+    suffix: 'Ctrl'
+});</code></pre>
+
+<p><a name="user-content-resolve"></a></p>
+
+<h3>
+<a id="user-content-resolve-callback-" class="anchor" href="#resolve-callback-" aria-hidden="true"><span class="octicon octicon-link"></span></a>resolve( callback )</h3>
+
+<p>Resolve all plugins and launch callback</p>
+
+<p><strong>Parameters:</strong></p>
+
+<ul class="task-list">
+<li>
+<strong>callback</strong> <em>Function</em>: to do after resolve tree</li>
+</ul>
+
+<p>Example:</p>
+
+<pre><code class="language-javascript">tree
+.folder('./my_folder')
+.resolve( function () {
+    console.log( 'App is running!' );
+});</code></pre>
+
+<h2>
+<a id="user-content-tests" class="anchor" href="#tests" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tests</h2>
+
+<pre class="pretty"><code>npm install &amp;&amp; npm test</code></pre>
+
+<h2>
+<a id="user-content-build-api-docs" class="anchor" href="#build-api-docs" aria-hidden="true"><span class="octicon octicon-link"></span></a>Build API docs</h2>
+
+<pre class="pretty"><code>npm install &amp;&amp; npm run build-docs</code></pre>
+
+<p><br><br></p>
+
 <hr>
-<p>© 2014 Jacobo Tabernero - <a href="https://github.com/jacoborus">jacoborus</a></p>
+
+<p>© 2015 Jacobo Tabernero - <a href="http://jacoborus.codes">jacoborus</a></p>
+
 <p>Released under <a href="https://raw.github.com/jacoborus/wiretree/master/LICENSE">MIT License</a></p>
+</article><script src="js/main.js"></script>
 
-
-		</div>
-
-		<script src="./js/vendor/prism.js" data-default-language="javascript"></script>
+<script src="js/vendor/prism.js"></script>
+<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
   })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-  ga('create', 'UA-48282158-1', '.micronube.com');
+  ga('create', 'UA-48282158-2', 'auto');
   ga('send', 'pageview');
 
 </script>
-	</body>
+
+<!-- Place this tag right after the last button or just before your close body tag. -->
+<script async defer id="github-bjs" src="https://buttons.github.io/buttons.js"></script>
+</body>
 </html>
