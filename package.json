@@ -5,7 +5,7 @@
   "main": "lib/Wiretree.js",
   "scripts": {
     "test": "mocha",
-    "build-docs": "node ./devtools/createdocs.js"
+    "build-docs": "node ./docs/createdocs.js && cat ./docs/readme.md ./docs/api.md ./docs/footer.md > ./README.md"
   },
   "repository": {
     "type": "git",

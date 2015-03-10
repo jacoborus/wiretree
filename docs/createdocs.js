@@ -1,0 +1,1 @@
+require('updox')('./lib/Wiretree.js', {dest: './docs', destname: 'api' });
