@@ -48,7 +48,7 @@ describe( 'Wiretree#load', function () {
 	it( 'uses localname', function () {
 		var pluginAddGroup = tree.load( './test/assets/local.js', { key: 'k', group: 'codes', localname: 'localname' });
 		expect( tree.plugins['k'].group ).to.equal( 'codes' );
-		expect( tree.groups.codes.localname.key ).to.equal( 'k' );
+		expect( tree.groups.codes.plugins.localname.key ).to.equal( 'k' );
 	});
 
 	// plugin with depedencies

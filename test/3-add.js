@@ -79,7 +79,7 @@ describe( 'Wiretree#add', function () {
 
 	it( 'adds a module to group', function () {
 		tree.add( 'b', 'javascript', { group: 'codes' });
-		expect( tree.groups.codes['b'].key ).to.equal( 'b' );
+		expect( tree.groups.codes.plugins['b'].key ).to.equal( 'b' );
 		expect( tree.plugins['b'].group ).to.equal( 'codes' );
 	});
 
@@ -121,7 +121,7 @@ describe( 'Wiretree#add', function () {
 		tree
 		.add( 'hidden', plugin, { group: 'codes', hidden: true })
 		.then( function() {
-			expect( tree.groups.codes.hidden ).to.be.a( 'object' );
+			expect( tree.groups.codes.plugins.hidden ).to.be.a( 'object' );
 			expect( tree.mainTree.hidden ).to.not.exist;
 		});
 	});

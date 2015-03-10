@@ -22,14 +22,6 @@ var asyncPlugin = {
 describe( 'Wiretree#resolve', function () {
 	var Wiretree = require('..');
 
-	it( 'throws error on bad argument: key', function () {
-		var tree = new Wiretree();
-		expect( function () {
-			tree.resolve( 5 );
-		}).to.throw( 'Bad argument: pluginsList' );
-	});
-
-
 	it( 'throws error on missing dependencies', function (done) {
 		var tree = new Wiretree();
 		tree
@@ -40,15 +32,6 @@ describe( 'Wiretree#resolve', function () {
 			}).to.throw( 'Can\'t find tree dependencies: mod' );
 			done();
 		});
-	});
-
-
-	it( 'send error when passed module not exist', function (done) {
-		var tree = new Wiretree();
-		tree.resolve( ['notExist'], function (err) {
-			expect( err ).to.equal( 'Plugin not found: notExist' );
-			done();
-		} );
 	});
 
 
@@ -82,18 +65,27 @@ describe( 'Wiretree#resolve', function () {
 
 	it( 'can resolve groups', function () {
 		var tree = new Wiretree();
-		var fruits = function (apple, orange) {
-			return orange + ' and ' + apple + ' are fruits';
+		var salad = function (fruits) {
+			return fruits.orange + ' and ' + fruits.apple + ' are fruits';
 		};
 		tree
-		.add( 'apple', 'apple', {group: 'salad' })
-		.add( 'orange', 'orange', {group: 'salad' })
-		.add( 'fruits', { wiretree: fruits }, { group: 'salad' })
+		.add( 'apple', 'apple', {group: 'fruits' })
+		.add( 'orange', 'orange', {group: 'fruits' })
+		.add( 'salad', { wiretree: salad })
 		.resolve( function () {
-			expect( tree.groups.salad.fruits.res ).equal( 'orange and apple are fruits' );
+			expect( tree.plugins.salad.res ).equal( 'orange and apple are fruits' );
 		});
 	});
 
+	it( 'resolve files', function (done) {
+		var tree = new Wiretree();
+		tree
+		.load( './test/assets/module.js' )
+		.resolve( function () {
+			expect( tree.plugins.module.res ).to.exist;
+			done();
+		});
+	});
 
 	it( 'throw error on circular dependencies before "Maximum call stack size exceeded"', function () {
 		var tree = new Wiretree();
@@ -138,5 +130,17 @@ describe( 'Wiretree#resolve', function () {
 			done();
 		});
 	});
+
+
+	it( 'resolve dependencies with suffixes', function () {
+		// add folder with options
+		var tree = new Wiretree();
+		tree
+		.folder( './test/assets/folder', {group: 'testgroup', prefix: 'pre', suffix: 'suf'})
+		.resolve( function () {
+			expect( tree.plugins.preAddonSuf.res ).to.equal( 'Sum is Addon2 says hello!!!!' );
+		});
+	});
+
 });
 

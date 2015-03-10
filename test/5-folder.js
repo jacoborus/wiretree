@@ -75,7 +75,7 @@ describe( 'Wiretree#folder', function () {
 	});
 
 	it( 'accepts local names in groups', function () {
-		expect( tree2.groups.testgroup.addon.key ).to.equal( 'preAddonSuf' );
+		expect( tree2.groups.testgroup.plugins.addon.key ).to.equal( 'preAddonSuf' );
 	});
 });
 
