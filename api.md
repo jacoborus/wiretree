@@ -43,6 +43,7 @@ tree
 console.log( 'mod is added!');
 })
 .add(.....)
+........
 ```
 
 <a name="add"></a>
@@ -67,27 +68,51 @@ All options are optional:
 **Example**:
 
 ```javascript
-// Add a simple module
-var one = function () {
-return 1
-};
-tree.add( 'one', one );
+// add a simple module
+tree.add( 'one', 1 );
+// now 'one' in tree equals 1
 
-
-// Add a wiretree plugin (a module with dependencies from tree)
-var plugin = function (one) { return one() + 2; };
-
-tree.add( 'plugin', {wiretree: plugin} );
+// add a Wiretree plugin (a module with dependencies from tree)
+.add( 'plugin', {
+wiretree: function (one) {
+return one() + 2;
+}
+});
+// now 'plugin in tree equals 3'
 ```
 
+**Async plugin example**:
 
-Passing a `group` will add the module to it. `localname` is the key for the group, equals passed `key` by default
+Expose plugin through 'wtDone' dependency instead returning it from function
+```js
+tree.add( 'asyncPlugin', {
+wiretree: function (wtDone) {
+doSomethingAsync( function (value) {
+wtDone( value );
+});
+}
+});
+```
+
+**Group example**:
+
+Passing a `group` will add the module to it. `localName` is how plugin will be exposed as into the group. `localName` is passed `key` by default
 
 ```javascript
 tree.add( 'homeCtrl', 1, {
 group: 'control',
 localname: 'home'
 });
+// plugin is exposed as 'homeCtrl' in main tree, and as 'home' in 'control' group
+// so you can inject it into other modules through main tree:
+var otherPlugin = function (homeCtrl) {
+// do something with homeCtrl
+};
+// or through its group:
+var anotherPlugin = function (control) {
+var homeCtrl = control.home;
+// do something with homeCtrl
+};
 ```
 
 <a name="load"></a>
@@ -97,32 +122,56 @@ load( filePath, options )
 Add a plugin to tree from a file
 **Parameters:**
 - **filePath** *String*: path to js file
-- **options** *Object*: plugin options
+- **options** *Object*: exposing options. See **options** below
 - **Return** *Object*: tree
 
+*Options:*
 
+- **`key`** *String*: use this value instead filename as plugin keyname in main tree.
+- **`group`** *String*: group to add the plugin
+- **`localname`** *String*: use this value as keyname into its group. (Only works when group is passed)
+- **`hidden`** *Boolean*: expose only in group, not in tree root. (Only works when group is passed)
+
+Add the plugin as 'user' into the tree:
+```js
+tree.load( './user.js');
+```
+
+Add the plugin as 'userCtrl' into the tree and as 'user' into 'controllers' group:
+```js
+tree.load( './user.js', {
+key: 'userCtrl'
+group: 'controllers',
+localname: 'user'
+});
+```
 
 <a name="folder"></a>
 folder( folderPath, options )
 ------------------------------------------------------------
 
-Load and add every file in the `folderPath`.
+Load every javascript file in `folderPath`.
 **Parameters:**
 - **folderPath** *String*: path to folder
-- **options** *Object*: see options
+- **options** *Object*: All options are optional. See options below
 - **Return** *Object*: tree
 
-Filename without extension is `key` and `localname` for every file, but prefixes and suffixes can be
-added to the `key` through `options.prefix` and `options.suffix` with camelCase style. These transformations
-not affects the `localname` in groups.
-
-All options are optional:
+*Options*:
 
 - **`group`** *String*: group to add the plugin
-- **`transform`** *Function*: convert keyname passed as argument. Must return new keyname
+- **`transform`** *Function*: get keyname passed as argument and return new keyname
 - **`prefix`** *String*: add prefix to keyname
 - **`suffix`** *String*: add suffix to keyname
 - **`hidden`** *Boolean*: expose only in group, not in tree root. Only works when group is passed
+
+Example: load all javascript files in 'controllers' folder into 'controllers' group and expose them in main tree with 'Ctrl' suffix
+
+```js
+tree.load( './controllers', {
+group: 'controllers',
+suffix: 'Ctrl'
+});
+```
 
 <a name="resolve"></a>
 resolve( callback )
@@ -132,6 +181,13 @@ Resolve all plugins and launch callback
 **Parameters:**
 - **callback** *Function*: to do after resolve tree
 
-
+Example:
+```js
+tree
+.folder('./my_folder')
+.resolve( function () {
+console.log( 'App is running!' );
+});
+```
 
 

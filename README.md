@@ -33,22 +33,6 @@ exports.wiretree = function (wtDone) {
 };
 ```
 
-
-
-Installation
-------------
-
-```
-npm install wiretree
-```
-
-
-API
----
-
-See [https://github.com/jacoborus/wiretree/blob/master/api.md](https://github.com/jacoborus/wiretree/blob/master/api.md)
-
-
 Example:
 --------
 
@@ -117,6 +101,20 @@ tree.folder( './myFolder', options);
 ```
 
 
+Installation
+------------
+
+```
+npm install wiretree
+```
+
+
+API
+---
+
+See [https://github.com/jacoborus/wiretree/blob/master/api.md](https://github.com/jacoborus/wiretree/blob/master/api.md)
+
+
 
 Tests
 -----
@@ -137,6 +135,6 @@ npm install && npm run build-docs
 
 ---
 
-© 2014 Jacobo Tabernero - [jacoborus](https://github.com/jacoborus)
+© 2015 Jacobo Tabernero - [jacoborus](https://github.com/jacoborus)
 
 Released under [MIT License](https://raw.github.com/jacoborus/wiretree/master/LICENSE)
