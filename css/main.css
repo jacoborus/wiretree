@@ -58,13 +58,13 @@ textarea {
 
 
 body {
-    background: #66a167;
+    background: #86c187;
     font-family: 'Open Sans', sans-serif;
 }
 a{color: #fff;}
 p, li{
-    color: #eee;
-    font-weight: 600;
+    color: #222;
+    font-weight: 500;
 }
 h1 {
     text-align: center;
