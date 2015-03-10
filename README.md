@@ -8,16 +8,31 @@ Elegant dependency injection framework for Node.js.
 [![Build Status](https://travis-ci.org/jacoborus/wiretree.svg?branch=master)](https://travis-ci.org/jacoborus/wiretree)
 
 
-Features
---------
+Wiretree creates a tree with your framework configuration, then it will start your app resolving each plugin of tree by passing one or more dependencies to it. Wiretree enables to extend apps by adding more plugins without changing configuration.
 
-- Clean plugin syntax (just add dependencies as arguments)
-- Load files and render modules on demand
-- Group modules
-- Add functions as modules or wiretree plugins (modules with dependencies)
-- Add modules and plugins from files
-- Add entire folders as group, as individual files or both
-- Add prefixes and suffixes to module keys for easy handling
+Plugins can be simple node.js modules or preconfigured (at resolve time) ones, they can require another plugins or modules as dependencies, as well as return their value asynchronously.
+
+A Wiretree plugin constructor is a function exposed as 'wiretree' in a nodejs module, its dependencies are declared as its arguments, and the value of resolved plugin is the returned value of constructor function:
+```js
+exports.wiretree = function (dependencyPlugin) {
+	var myPlugin;
+	// do something with myPlugin and dependencyPlugin
+	// ...
+	// and return your plugin
+	return myPlugin;
+};
+```
+
+Plugin constructors can be resolved asynchronously by passing its value througth `wtDone` (`wtDone` is injected by Wiretree):
+```js
+exports.wiretree = function (wtDone) {
+	doSomeAsyncOp( function (value) {
+		// expose plugin
+		wtDone( value );
+	});
+};
+```
+
 
 
 Installation
@@ -46,7 +61,7 @@ module.exports = function () {
 }
 ```
 
-A Wiretree plugin is a function exposed as 'module.exports.wiretree', with its dependencies names declared as arguments. Plugins returns the rendered module. If your plugin doesn't need to return a module simply return `true` in order to continue (this is important for async loading).
+A Wiretree plugin constructor:
 
 **`plugin.js`:**
 ```js
@@ -63,22 +78,13 @@ var Wiretree = require( 'wiretree' );
 var tree = new Wiretree( __dirname );
 
 
-// add module `data` (without dependencies) and then get it
+// add module `data` (without dependencies)
 tree.add( {a:1, b:2}, 'data' );
-tree.get( 'data' );
-// => {a:1, b:2}
-
 
 // Add a wiretree plugin `sum` (module with dependencies)
 var sum = function (data) {
     return data.a + data.b;
 };
-tree.add( {wiretree: sum}, 'sum' );
-
-// A Wiretree plugin will be rendered with its dependencies into a typical module
-// the first time you get it, not when you add it.
-tree.get( 'sum' );
-// => 3
 
 
 // load and add a module from file
@@ -92,9 +98,6 @@ mod();
 // load and add a wiretree plugin
 tree.load( './plugin.js', 'result' );
 
-// get a resolved a module (this resolves its dependencies too)
-tree.get( 'result' );
-// => 'result is 3'
 ```
 
 **A complex example**:
@@ -111,8 +114,6 @@ var options = {
 tree.folder( './myFolder', options);
 // => ['preMyModCtrl', 'preMyPluginCtrl']
 
-tree.get( 'myGroup');
-// => {myMod: [object Function], myPlugin: [object Function]}
 ```
 
 
@@ -121,14 +122,15 @@ Tests
 -----
 
 ```
-npm install -d && npm test
+npm install && npm test
 ```
+
 
 Build API docs
 --------------
 
 ```
-npm install -d && npm run build-docs
+npm install && npm run build-docs
 ```
 
 <br><br>
