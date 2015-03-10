@@ -12,11 +12,10 @@ describe( 'Wiretree#folder', function () {
 	var tree = new Wiretree();
 
 	var options = {};
-
-	it( 'throws error on bad argument: route', function () {
+	it( 'throws error on bad argument: folderPath', function () {
 		expect( function () {
 			tree.folder( 1, options);
-		}).to.throw( 'Bad argument: route' );
+		}).to.throw( 'Bad argument: folderPath' );
 	});
 
 	it( 'throws error on bad argument: options', function () {
@@ -76,15 +75,7 @@ describe( 'Wiretree#folder', function () {
 	});
 
 	it( 'accepts local names in groups', function () {
-		expect( tree2.get( 'testgroup' ).addon ).to.equal( 'Sum is Addon2 says hello!!!!' );
-	});
-
-	it( 'ignore folders under loaded folder', function () {
-		tree.folder( './test/assets/nestedFolders', {
-			group: 'zero'
-		});
-		expect( tree.get('zero') ).to.be.a( 'object' );
-		expect( typeof tree.get('zero').length ).to.equal( 'undefined' );
+		expect( tree2.groups.testgroup.plugins.addon.key ).to.equal( 'preAddonSuf' );
 	});
 });
 

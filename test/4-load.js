@@ -1,41 +1,39 @@
 'use strict';
 
 var expect = require('chai').expect,
-	util = require('util');
+	Wiretree = require('..');
 
 
 describe( 'Wiretree#load', function () {
-	var Wiretree = require('..');
 	var tree = new Wiretree();
 
-
-	it( 'throws errors on bad argument: key', function () {
+	it( 'throw error on bad argument: key', function () {
 		expect( function () {
-			tree.load( './test/assets/module.js', {} );
+			tree.load( './test/assets/module.js', { key: 1 });
 		}).to.throw( 'Bad argument: key' );
 	});
 
-	it( 'throws errors on bad argument: route', function () {
+	it( 'throw error on bad argument: filePath', function () {
 		expect( function () {
-			tree.load( 2, 'f' );
-		}).to.throw( 'Bad argument: route' );
+			tree.load( 2 );
+		}).to.throw( 'Bad filePath: 2' );
 	});
 
-	it( 'throws errors on bad argument: group', function () {
+	it( 'throw error on bad argument: group', function () {
 		expect( function () {
-			tree.load( './test/assets/module.js', 'f', { group: 3 });
+			tree.load( './test/assets/module.js', { group: 3, key: 'f'});
 		}).to.throw( 'Bad argument: group' );
 	});
 
-	it( 'throws errors on bad argument: localname', function () {
+	it( 'throw error on bad argument: localname', function () {
 		expect( function () {
-			tree.load( './test/assets/module.js', 'f', { group: 'hello', localname: 3 });
+			tree.load( './test/assets/module.js', { group: 'hello', localname: 3, key: 'f' });
 		}).to.throw( 'Bad argument: localname' );
 	});
 
 
 	it( 'returns the tree', function () {
-		expect( tree.load( './test/assets/module.js', 'f' ).plugins ).to.exist;
+		expect( tree.load( './test/assets/module.js', {key:'f'} ).plugins ).to.exist;
 	});
 
 	it( 'loads a module to tree.plugins', function () {
@@ -43,18 +41,18 @@ describe( 'Wiretree#load', function () {
 	});
 
 	it( 'sets the group into the module', function () {
-		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'e', { group: 'codes' });
+		var pluginAddGroup = tree.load( './test/assets/plugin.js', { key: 'e', group: 'codes' });
 		expect( tree.plugins['e'].group ).to.equal( 'codes' );
 	});
 
 	it( 'uses localname', function () {
-		var pluginAddGroup = tree.load( './test/assets/local.js', 'k', { group: 'codes', localname: 'localname' });
+		var pluginAddGroup = tree.load( './test/assets/local.js', { key: 'k', group: 'codes', localname: 'localname' });
 		expect( tree.plugins['k'].group ).to.equal( 'codes' );
-		expect( tree.groups.codes.localname.key ).to.equal( 'k' );
+		expect( tree.groups.codes.plugins.localname.key ).to.equal( 'k' );
 	});
 
 	// plugin with depedencies
-	tree.load( './test/assets/plugin.js', 'g' );
+	tree.load( './test/assets/plugin.js', {key: 'g'});
 
 	it( 'loads a module to tree.plugins', function () {
 		expect( tree.plugins['g'].key ).to.equal( 'g' );
@@ -62,7 +60,7 @@ describe( 'Wiretree#load', function () {
 	});
 
 	it( 'sets the group into the module', function () {
-		var pluginAddGroup = tree.load( './test/assets/plugin.js', 'h', { group: 'codes' });
+		var pluginAddGroup = tree.load( './test/assets/plugin.js', { key: 'h', group: 'codes' });
 		expect( tree.plugins['h'].group ).to.equal( 'codes' );
 	});
 });

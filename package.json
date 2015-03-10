@@ -1,11 +1,11 @@
 {
   "name": "wiretree",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "Node.js dependency injection framework",
   "main": "lib/Wiretree.js",
   "scripts": {
     "test": "mocha",
-    "build-docs": "node ./devtools/createdocs.js"
+    "build-docs": "node ./docs/createdocs.js && cat ./docs/readme.md ./docs/api.md ./docs/footer.md > ./README.md"
   },
   "repository": {
     "type": "git",
@@ -24,12 +24,8 @@
     "url": "https://github.com/jacoborus/wiretree/issues"
   },
   "devDependencies": {
-    "chai": "^1.9.1",
-    "mocha": "^1.18.2",
+    "chai": "^2.1.1",
+    "mocha": "^2.2.1",
     "updox": "0.0.5"
-  },
-  "dependencies": {
-    "chai": "^2.0.0",
-    "mocha": "^2.1.0"
   }
 }

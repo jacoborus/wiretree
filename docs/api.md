@@ -1,48 +1,5 @@
-![Wiretree](https://raw.githubusercontent.com/jacoborus/wiretree/master/brand/wiretreeGreen.svg 'Wiretree logo')
-================================================================================================================
-
-Elegant dependency injection framework for Node.js.
-
-[wiretree.jacoborus.codes](http://wiretree.jacoborus.codes/)
-
-[![Build Status](https://travis-ci.org/jacoborus/wiretree.svg?branch=master)](https://travis-ci.org/jacoborus/wiretree)
-
-
-Wiretree creates a tree with your framework configuration, then it will start your app resolving each plugin of tree by passing one or more dependencies to it. Wiretree enables to extend apps by adding more plugins without changing configuration.
-
-Plugins can be simple node.js modules or preconfigured (at resolve time) ones, they can require another plugins or modules as dependencies, as well as return their value asynchronously.
-
-A Wiretree plugin constructor is a function exposed as 'wiretree' in a nodejs module, its dependencies are declared as its arguments, and the value of resolved plugin is the returned value of constructor function:
-```js
-exports.wiretree = function (dependencyPlugin) {
-    var myPlugin;
-    // do something with myPlugin and dependencyPlugin
-    // ...
-    // and return your plugin
-    return myPlugin;
-};
-```
-
-Plugin constructors can be resolved asynchronously by passing its value through `wtDone` (`wtDone` is injected by Wiretree):
-```js
-exports.wiretree = function (wtDone) {
-    doSomeAsyncOp( function (value) {
-        // expose plugin
-        wtDone( value );
-    });
-};
-```
-
-
-Installation
-------------
-
-```
-npm install wiretree
-```
-
-API
----
+Wiretree API
+============
 
 
 - [Wiretree](#Wiretree)
@@ -53,13 +10,12 @@ API
 - [resolve](#resolve)
 
 <a name="Wiretree"></a>
-### Wiretree( folderPath )
+Wiretree( folderPath )
+------------------------------------------------------------
 
-Wiretree constructor.
+Wiretree constructor
 Creates new tree
-
 **Parameters:**
-
 - **folderPath** *String*: path to root folder
 
 Example:
@@ -70,10 +26,10 @@ var tree = new Wiretree( 'path/to/rootFolder');
 ```
 
 <a name="then"></a>
-### then( fn )
+then( fn )
+------------------------------------------------------------
 
 Executes a function and then return the tree
-
 **Parameters:**
 - **fn** *Function*: function
 - **Return** *Object*: tree
@@ -84,20 +40,19 @@ Example:
 tree
 .add('mod', 1)
 .then( function () {
-    console.log( 'mod is added!');
+console.log( 'mod is added!');
 })
 .add(.....)
 ........
 ```
 
 <a name="add"></a>
-### add( key, value, options )
+add( key, value, options )
+------------------------------------------------------------
 
 Add a module or wiretree plugin into the tree.
 Returns tree object
-
 **Parameters:**
-
 - **key** *String*: name for the plugin
 - **value** *Number|String|Boolean|Object|Function*: plugin
 - **options** *Object*: (optional) see options
@@ -119,9 +74,9 @@ tree.add( 'one', 1 );
 
 // add a Wiretree plugin (a module with dependencies from tree)
 .add( 'plugin', {
-    wiretree: function (one) {
-        return one() + 2;
-    }
+wiretree: function (one) {
+return one() + 2;
+}
 });
 // now 'plugin in tree equals 3'
 ```
@@ -131,11 +86,11 @@ tree.add( 'one', 1 );
 Expose plugin through 'wtDone' dependency instead returning it from function
 ```js
 tree.add( 'asyncPlugin', {
-    wiretree: function (wtDone) {
-        doSomethingAsync( function (value) {
-            wtDone( value );
-        });
-    }
+wiretree: function (wtDone) {
+doSomethingAsync( function (value) {
+wtDone( value );
+});
+}
 });
 ```
 
@@ -145,26 +100,26 @@ Passing a `group` will add the module to it. `localName` is how plugin will be e
 
 ```javascript
 tree.add( 'homeCtrl', 1, {
-    group: 'control',
-    localname: 'home'
+group: 'control',
+localname: 'home'
 });
 // plugin is exposed as 'homeCtrl' in main tree, and as 'home' in 'control' group
 // so you can inject it into other modules through main tree:
 var otherPlugin = function (homeCtrl) {
-    // do something with homeCtrl
+// do something with homeCtrl
 };
 // or through its group:
 var anotherPlugin = function (control) {
 var homeCtrl = control.home;
-    // do something with homeCtrl
+// do something with homeCtrl
 };
 ```
 
 <a name="load"></a>
-### load( filePath, options )
+load( filePath, options )
+------------------------------------------------------------
 
 Add a plugin to tree from a file
-
 **Parameters:**
 - **filePath** *String*: path to js file
 - **options** *Object*: exposing options. See **options** below
@@ -185,19 +140,18 @@ tree.load( './user.js');
 Add the plugin as 'userCtrl' into the tree and as 'user' into 'controllers' group:
 ```js
 tree.load( './user.js', {
-    key: 'userCtrl'
-    group: 'controllers',
-    localname: 'user'
+key: 'userCtrl'
+group: 'controllers',
+localname: 'user'
 });
 ```
 
 <a name="folder"></a>
-### folder( folderPath, options )
+folder( folderPath, options )
+------------------------------------------------------------
 
 Load every javascript file in `folderPath`.
-
 **Parameters:**
-
 - **folderPath** *String*: path to folder
 - **options** *Object*: All options are optional. See options below
 - **Return** *Object*: tree
@@ -214,18 +168,17 @@ Example: load all javascript files in 'controllers' folder into 'controllers' gr
 
 ```js
 tree.load( './controllers', {
-    group: 'controllers',
-    suffix: 'Ctrl'
+group: 'controllers',
+suffix: 'Ctrl'
 });
 ```
 
 <a name="resolve"></a>
-### resolve( callback )
+resolve( callback )
+------------------------------------------------------------
 
 Resolve all plugins and launch callback
-
 **Parameters:**
-
 - **callback** *Function*: to do after resolve tree
 
 Example:
@@ -233,32 +186,8 @@ Example:
 tree
 .folder('./my_folder')
 .resolve( function () {
-    console.log( 'App is running!' );
+console.log( 'App is running!' );
 });
 ```
 
 
-
-
-Tests
------
-
-```
-npm install && npm test
-```
-
-
-Build API docs
---------------
-
-```
-npm install && npm run build-docs
-```
-
-<br><br>
-
----
-
-© 2015 Jacobo Tabernero - [jacoborus](http://jacoborus.codes)
-
-Released under [MIT License](https://raw.github.com/jacoborus/wiretree/master/LICENSE)
