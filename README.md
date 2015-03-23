@@ -108,6 +108,7 @@ All options are optional:
 - **`group`** *String*: group to add the plugin
 - **`localname`** *Function*: keyname into its group. Only works when group is passed
 - **`hidden`** *Boolean*: expose only in group, not in tree root. Only works when group is passed
+- **`processing`** *Function*: processing function module
 
 
 **Example**:
@@ -176,6 +177,7 @@ Add a plugin to tree from a file
 - **`group`** *String*: group to add the plugin
 - **`localname`** *String*: use this value as keyname into its group. (Only works when group is passed)
 - **`hidden`** *Boolean*: expose only in group, not in tree root. (Only works when group is passed)
+- **`processing`** *Function*: processing function module
 
 Add the plugin as 'user' into the tree:
 ```js
@@ -209,6 +211,7 @@ Load every javascript file in `folderPath`.
 - **`prefix`** *String*: add prefix to keyname
 - **`suffix`** *String*: add suffix to keyname
 - **`hidden`** *Boolean*: expose only in group, not in tree root. Only works when group is passed
+- **`processing`** *Function*: processing function module
 
 Example: load all javascript files in 'controllers' folder into 'controllers' group and expose them in main tree with 'Ctrl' suffix
 

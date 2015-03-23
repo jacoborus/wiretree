@@ -125,4 +125,6 @@ describe( 'Wiretree#add', function () {
 			expect( tree.mainTree.hidden ).to.not.exist;
 		});
 	});
+
 });
+

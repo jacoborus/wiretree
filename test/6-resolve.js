@@ -18,6 +18,13 @@ var asyncPlugin = {
 		wtDone( plugin );
 	}
 };
+var getProcessed = function (processed) {
+	return 'number ' + processed();
+}
+var getOne = function () {
+	return 1;
+}
+
 
 describe( 'Wiretree#resolve', function () {
 	var Wiretree = require('..');
@@ -141,6 +148,52 @@ describe( 'Wiretree#resolve', function () {
 			expect( tree.plugins.preAddonSuf.res ).to.equal( 'Sum is Addon2 says hello!!!!' );
 		});
 	});
+
+	// processing
+
+	it( 'resolve processed on modules', function (done) {
+		var processedModule = function () {
+			return 1;
+		}
+
+		var tree = new Wiretree();
+		tree
+		.add( 'processedModule', processedModule, { processing: getProcessed })
+		.resolve( function () {
+			expect( tree.plugins.processedModule.res ).to.equal( 'number 1' );
+			done();
+		});
+	});
+
+	it( 'resolve processed on sync plugins', function (done) {
+		var processedSync = function (getOne) {
+			return getOne;
+		}
+
+		var tree = new Wiretree();
+		tree
+		.add( 'getOne', getOne )
+		.add( 'processedSync', {wiretree: processedSync}, { processing: getProcessed })
+		.resolve( function () {
+			expect( tree.plugins.processedSync.res ).to.equal( 'number 1' );
+			done();
+		});
+	});
+
+	it( 'resolve processed on async plugins', function (done) {
+		var processedAsync = function (wtDone) {
+			wtDone( function () { return 1; });
+		};
+
+		var tree = new Wiretree();
+		tree
+		.add( 'processedAsync', {wiretree: processedAsync}, { processing: getProcessed })
+		.resolve( function () {
+			expect( tree.plugins.processedAsync.res ).to.equal( 'number 1' );
+			done();
+		});
+	});
+
 
 });
 
