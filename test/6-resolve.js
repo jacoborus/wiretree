@@ -21,6 +21,9 @@ var asyncPlugin = {
 var getProcessed = function (processed) {
 	return 'number ' + processed();
 }
+var getProcessedSettings = function (processed, settings) {
+	return settings.two + ' > ' + processed();
+}
 var getOne = function () {
 	return 1;
 }
@@ -151,7 +154,7 @@ describe( 'Wiretree#resolve', function () {
 
 	// processing
 
-	it( 'resolve processed on modules', function (done) {
+	it( 'process modules', function (done) {
 		var processedModule = function () {
 			return 1;
 		}
@@ -165,7 +168,7 @@ describe( 'Wiretree#resolve', function () {
 		});
 	});
 
-	it( 'resolve processed on sync plugins', function (done) {
+	it( 'process sync plugins', function (done) {
 		var processedSync = function (getOne) {
 			return getOne;
 		}
@@ -180,7 +183,7 @@ describe( 'Wiretree#resolve', function () {
 		});
 	});
 
-	it( 'resolve processed on async plugins', function (done) {
+	it( 'process async plugins', function (done) {
 		var processedAsync = function (wtDone) {
 			wtDone( function () { return 1; });
 		};
@@ -194,6 +197,27 @@ describe( 'Wiretree#resolve', function () {
 		});
 	});
 
+	it( 'process with settings', function (done) {
+		var processedSettings = function (getOne) {
+			return getOne;
+		}
 
+		var tree = new Wiretree();
+		tree
+		.add( 'getOne', getOne )
+		.add(
+			'processedSettings',
+			{
+				wiretree: processedSettings,
+				settings: {
+					two: 'two'
+				}
+			}, { processing: getProcessedSettings }
+		)
+		.resolve( function () {
+			expect( tree.plugins.processedSettings.res ).to.equal( 'two > 1' );
+			done();
+		});
+	});
 });
 
