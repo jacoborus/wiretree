@@ -194,3 +194,19 @@ console.log( 'App is running!' );
 ```
 
 
+<a name="get"></a>
+get( plugin )
+------------------------------------------------------------
+
+Get a resolved plugin
+
+**Parameters:**
+- **`plugin`** *String*: name of the plugin
+- **return** ***: resolved plugin
+
+Example:
+```js
+var thisPlugin = tree.get('myPluginName');
+```
+
+
