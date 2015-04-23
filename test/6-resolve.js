@@ -219,5 +219,25 @@ describe( 'Wiretree#resolve', function () {
 			done();
 		});
 	});
+
+	it( 'call async plugin constructor once', function (done) {
+		var control = 0;
+		var plugin = function (wtDone) {
+			setTimeout( function () {
+				++control;
+				wtDone(5);
+			}, 30);
+		};
+
+		new Wiretree()
+		.add('plug', { wiretree: plugin })
+		.add('other', { wiretree: function (plug) {
+			return plug;
+		}})
+		.resolve( function () {
+			expect( control ).to.equal( 1 );
+			done();
+		});
+	});
 });
 
