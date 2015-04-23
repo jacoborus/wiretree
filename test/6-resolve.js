@@ -73,7 +73,7 @@ describe( 'Wiretree#resolve', function () {
 	});
 
 
-	it( 'can resolve groups', function () {
+	it( 'can resolve groups', function (done) {
 		var tree = new Wiretree();
 		var salad = function (fruits) {
 			return fruits.orange + ' and ' + fruits.apple + ' are fruits';
@@ -83,9 +83,12 @@ describe( 'Wiretree#resolve', function () {
 		.add( 'orange', 'orange', {group: 'fruits' })
 		.add( 'salad', { wiretree: salad })
 		.resolve( function () {
+
 			expect( tree.plugins.salad.res ).equal( 'orange and apple are fruits' );
+			done();
 		});
 	});
+
 
 	it( 'resolve files', function (done) {
 		var tree = new Wiretree();
@@ -97,7 +100,7 @@ describe( 'Wiretree#resolve', function () {
 		});
 	});
 
-	it( 'throw error on circular dependencies before "Maximum call stack size exceeded"', function () {
+	it( 'throw error on circular dependencies instead "Maximum call stack size exceeded"', function () {
 		var tree = new Wiretree();
 		var one = function (two) {
 			return two + 5;
@@ -134,8 +137,8 @@ describe( 'Wiretree#resolve', function () {
 		.add( 'two', { wiretree: two })
 		.add( 't', { wiretree: t })
 		.then( function () {
-			expect( function () {
 				tree.resolve();
+			expect( function () {
 			}).to.not.throw( Error );
 			done();
 		});
@@ -219,6 +222,7 @@ describe( 'Wiretree#resolve', function () {
 			done();
 		});
 	});
+
 
 	it( 'call async plugin constructor once', function (done) {
 		var control = 0;
