@@ -1,42 +1,39 @@
 'use strict';
 
-var expect = require('chai').expect,
-	util = require('util');
+var test = require('tape').test
 
+var Wiretree = require('..');
 
-describe( 'Wiretree#get', function () {
-	var Wiretree = require('..');
-
-	it( 'throw error when not resolved tree', function (done) {
-		var tree = new Wiretree();
-		tree
-		.add( 'uno', 1 )
-		.then( function () {
-			expect( function () {
-				tree.get( 'uno' );
-			}).to.throw( 'tree not resolved. Resolve tree before get any plugin');
-			done();
-		});
-	});
-	it( 'throw error when not plugin not exists', function (done) {
-		var tree = new Wiretree();
-		tree
-		.add( 'uno', 1 )
-		.resolve( function () {
-			expect( function () {
-				tree.get( 'dos' );
-			}).to.throw( 'plugin `dos` not exists');
-			done();
-		});
-	});
-	it( 'gets plugins when tree is resolved', function (done) {
-		var tree = new Wiretree();
-		tree
-		.add( 'uno', 1 )
-		.resolve( function () {
-			expect( tree.get( 'uno' )).to.equal( 1 );
-			done();
-		});
-	});
+test('get:: throw error when not resolved tree', function (t) {
+  var tree = new Wiretree();
+  tree
+  .add('uno', 1)
+  .then(function () {
+    t.throws(function () {
+      tree.get('uno');
+    }, /tree not resolved. Resolve tree before get any plugin/);
+    t.end();
+  });
 });
 
+test('get:: throw error when not plugin not exists', function (t) {
+  var tree = new Wiretree();
+  tree
+  .add('uno', 1)
+  .resolve(function () {
+    t.throws(function () {
+      tree.get('dos');
+    }, /plugin `dos` not exists/);
+    t.end();
+  });
+});
+
+test('get:: gets plugins when tree is resolved', function (t) {
+  var tree = new Wiretree();
+  tree
+  .add('uno', 1)
+  .resolve(function () {
+    t.is(tree.get('uno'), 1);
+    t.end();
+  });
+});

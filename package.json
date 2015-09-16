@@ -4,7 +4,7 @@
   "description": "Node.js dependency injection framework",
   "main": "lib/Wiretree.js",
   "scripts": {
-    "test": "mocha",
+    "test": "tape test/*.js",
     "build-docs": "node ./docs/createdocs.js && cat ./docs/readme.md ./docs/api.md ./docs/footer.md > ./README.md"
   },
   "repository": {
@@ -24,8 +24,7 @@
     "url": "https://github.com/jacoborus/wiretree/issues"
   },
   "devDependencies": {
-    "chai": "^2.1.1",
-    "mocha": "^2.2.1",
+    "tape": "^4.2.0",
     "updox": "0.0.5"
   }
 }

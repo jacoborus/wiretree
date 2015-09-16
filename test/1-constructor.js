@@ -1,19 +1,14 @@
 'use strict';
 
-var expect = require('chai').expect,
-	util = require('util'),
-	Wiretree = require('..');
+var test = require('tape').test,
+    Wiretree = require('..');
 
+test('Constructor:: accepts root path as argument', function (t) {
+  t.is(new Wiretree('./hello').rootPath, './hello', 'custom rootPath');
+  t.end()
+});
 
-describe( 'Wiretree constructor', function () {
-
-	it( 'accepts root path as argument', function () {
-		var tree = new Wiretree( './hello' );
-		expect( tree.rootPath ).to.equal( './hello' );
-	});
-
-	it( 'set root path as "." by default', function () {
-		var tree = new Wiretree();
-		expect( tree.rootPath ).to.equal( '.' );
-	});
+test('Constructor:: set root path as "." by default', function (t) {
+  t.is(new Wiretree().rootPath, '.', 'default rootPath');
+  t.end()
 });
