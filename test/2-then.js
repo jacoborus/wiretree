@@ -1,12 +1,14 @@
-'use strict';
+'use strict'
 
-var test = require('tape').test
+const test = require('tape').test
 
 test('then:: call passed function', function (t) {
-  var Wiretree = require('..');
-  new Wiretree().then( function () {
+  let Wiretree = require('..'),
+      tree = new Wiretree()
+
+  tree.then(function () {
     t.pass('callback invoked')
     t.end()
-  });
-});
+  })
+})
 

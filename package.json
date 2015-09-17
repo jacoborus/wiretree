@@ -5,7 +5,8 @@
   "main": "lib/Wiretree.js",
   "scripts": {
     "test": "tape test/*.js",
-    "build-docs": "node ./docs/createdocs.js && cat ./docs/readme.md ./docs/api.md ./docs/footer.md > ./README.md"
+    "build-docs": "node ./docs/createdocs.js && cat ./docs/readme.md ./docs/api.md ./docs/footer.md > ./README.md",
+    "eslint": "eslint lib test"
   },
   "repository": {
     "type": "git",
@@ -19,11 +20,16 @@
   ],
   "homepage": "http://wiretree.micronube.com/",
   "author": "Jacobo Tabernero - jacobo@xarope.eu",
+  "engines": {
+    "node": ">=4.0.0"
+  },
+  "engineStrict": true,
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/jacoborus/wiretree/issues"
   },
   "devDependencies": {
+    "eslint": "^1.4.1",
     "tape": "^4.2.0",
     "updox": "0.0.5"
   }
