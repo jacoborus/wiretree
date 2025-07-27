@@ -1,12 +1,12 @@
 import { db } from "../db.ts";
 import { postService } from "../post/postService.ts";
 import { userService } from "../user/userService.ts";
-import { createApp, defValue } from "../../wiretree.ts";
+import { createApp, plain } from "../../wiretree.ts";
 
 const defs = {
-  db: defValue(db),
-  valor: defValue(5),
-  test: defValue(() => "testtttt"),
+  db: plain(db),
+  valor: plain(5),
+  test: plain(() => "testtttt"),
   ...userService,
   ...postService,
 };

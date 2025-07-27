@@ -1,18 +1,18 @@
-export function defValue<T>(unit: T) {
+export function plain<T>(unit: T) {
   return {
     type: "value",
     value: unit,
   } as const;
 }
 
-export function defFactory<T>(unit: T) {
+export function factory<T>(unit: T) {
   return {
     type: "factory",
     value: unit,
   } as const;
 }
 
-export function defBinded<T>(unit: T) {
+export function bound<T>(unit: T) {
   return {
     type: "binded",
     value: unit,
@@ -101,7 +101,7 @@ export function createApp<Defs extends DefList>(defs: Defs) {
   }
 }
 
-export function createBlock<D extends DefList, Prefix extends string>(
+export function block<D extends DefList, Prefix extends string>(
   name: Prefix,
   units: D,
 ) {

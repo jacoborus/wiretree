@@ -1,9 +1,4 @@
-import {
-  createBlock,
-  defBinded,
-  defFactory,
-  type InjectFrom,
-} from "../../wiretree.ts";
+import { block, bound, factory, type InjectFrom } from "../../wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@post">;
@@ -38,9 +33,9 @@ function collection(inject: I) {
   return db.posts;
 }
 
-export const postService = createBlock("@post", {
-  getPosts: defBinded(getPosts),
-  getPost: defBinded(getPost),
-  addPost: defBinded(addPost),
-  collection: defFactory(collection),
+export const postService = block("@post", {
+  getPosts: bound(getPosts),
+  getPost: bound(getPost),
+  addPost: bound(addPost),
+  collection: factory(collection),
 });

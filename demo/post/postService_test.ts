@@ -12,13 +12,12 @@ Deno.test(function addPostTest() {
 
   const injector = getFakeInjector({
     db,
-    "@user.getUseir": (id: string) => ({
+    "@user.getUser": (id: string) => ({
       id,
       name: "jacobo",
       email: "asdfasdf@qfasdfasd.asdf",
       isAdmin: true,
     }),
-    valor: 5,
   });
 
   const addPost = addPostFactory.bind(injector);

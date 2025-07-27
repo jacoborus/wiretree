@@ -9,13 +9,13 @@ instead, they represent units that share the same namespace.
 Example:
 
 ```ts
-import { createApp, defValue } from "wiretree";
+import { createApp, plain } from "wiretree";
 import { db } from "../db.ts";
 import { postService } from "../post/postService.ts";
 import { userService } from "../user/userService.ts";
 
 const defs = {
-  db: defValue(db),
+  db: plain(db),
   ...userService,
   ...postService,
 };
@@ -29,7 +29,7 @@ addUser("John", "doe@example.com");
 ```
 
 ```ts
-import { createBlock, defBinded, type InjectFrom } from "wiretree";
+import { block, bound, type InjectFrom } from "wiretree";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@user">;
@@ -50,14 +50,14 @@ export function addUser(this: I, name: string, email: string, isAdmin = false) {
   return user.id;
 }
 
-export const userService = createBlock("@user", {
-  getUser: defBinded(getUser),
-  addUser: defBinded(addUser),
+export const userService = block("@user", {
+  getUser: bound(getUser),
+  addUser: bound(addUser),
 });
 ```
 
 ```ts
-import { createBlock, defBinded, defFactory, type InjectFrom } from "wiretree";
+import { block, bound, factory, type InjectFrom } from "wiretree";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@post">;
@@ -83,8 +83,8 @@ export function getPost(this: I) {
   return (id: string) => db.posts.find((post) => post.id === id);
 }
 
-export const postService = createBlock("@post", {
-  addPost: defBinded(addPost),
-  getPost: defFactory(getPost),
+export const postService = block("@post", {
+  addPost: bound(addPost),
+  getPost: factory(getPost),
 });
 ```

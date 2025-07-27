@@ -1,13 +1,13 @@
-import { createBlock, defBinded, type InjectFrom } from "../../wiretree.ts";
+import { block, bound, type InjectFrom } from "../../wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@user">;
 
-export const userService = createBlock("@user", {
-  getUser: defBinded(getUser),
-  getUserByEmail: defBinded(getUserByEmail),
-  getUsers: defBinded(getUsers),
-  addUser: defBinded(addUser),
+export const userService = block("@user", {
+  getUser: bound(getUser),
+  getUserByEmail: bound(getUserByEmail),
+  getUsers: bound(getUsers),
+  addUser: bound(addUser),
 });
 
 export function getUsers(this: I) {
