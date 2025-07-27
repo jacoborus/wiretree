@@ -68,7 +68,7 @@ export function factory<T>(unit: T) {
 
 /**
  * Creates a bound definition where the unit is a function that is bound to the
- * dependency injection context. It will be cached and reused
+ * dependency injector.
  *
  * Bound definitions are ideal for functions that need access to other units
  * through the `this` context. The function will be bound to an injector, allowing
@@ -127,7 +127,7 @@ export function bound<T>(unit: T) {
 export function createApp<Defs extends DefList>(defs: Defs) {
   type AppObj = BuildMap<Defs>;
   const appCache: Partial<AppObj> = {};
-  const injectors: Map<string, BulkInjector> = new Map();
+  const injectors = new Map<string, BulkInjector>();
   const appInjector = getInjector("");
   injectors.set("", appInjector as BulkInjector);
   return appInjector;
