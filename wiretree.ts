@@ -1,20 +1,24 @@
+const plainSymbol = Symbol("plain");
+const factorySymbol = Symbol("factory");
+const boundSymbol = Symbol("bound");
+
 export function plain<T>(unit: T) {
   return {
-    type: "plain",
+    type: plainSymbol,
     value: unit,
   } as const;
 }
 
 export function factory<T>(unit: T) {
   return {
-    type: "factory",
+    type: factorySymbol,
     value: unit,
   } as const;
 }
 
 export function bound<T>(unit: T) {
   return {
-    type: "bound",
+    type: boundSymbol,
     value: unit,
   } as const;
 }
@@ -118,13 +122,13 @@ export function block<D extends DefList, Prefix extends string>(
 }
 
 function isBound<T extends Func>(unit: Definition): unit is BoundDef<T> {
-  return unit.type === "bound";
+  return unit.type === boundSymbol;
 }
 function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
-  return unit.type === "factory";
+  return unit.type === factorySymbol;
 }
 function isPlain<T>(unit: Definition): unit is PlainDef<T> {
-  return unit.type === "plain";
+  return unit.type === plainSymbol;
 }
 
 // =======
@@ -133,19 +137,19 @@ type DefList = Record<string, Definition>;
 type List = Record<string, any>;
 
 interface BoundDef<T> {
-  type: "bound";
+  type: typeof boundSymbol;
   value: T & ThisType<BulkInjector>;
   parent?: string;
 }
 
 interface FactoryDef<T> {
-  type: "factory";
+  type: typeof factorySymbol;
   value: (...args: any[]) => T;
   parent?: string;
 }
 
 interface PlainDef<T> {
-  type: "plain";
+  type: typeof plainSymbol;
   value: T;
   parent?: string;
 }
