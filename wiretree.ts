@@ -1,6 +1,6 @@
 export function plain<T>(unit: T) {
   return {
-    type: "value",
+    type: "plain",
     value: unit,
   } as const;
 }
@@ -14,7 +14,7 @@ export function factory<T>(unit: T) {
 
 export function bound<T>(unit: T) {
   return {
-    type: "binded",
+    type: "bound",
     value: unit,
   } as const;
 }
@@ -62,7 +62,7 @@ export function createApp<Defs extends DefList>(defs: Defs) {
         throw new Error(`Key ${String(finalKey)} not found in block`);
       }
 
-      if (isValueDef(unit)) {
+      if (isPlain(unit)) {
         const value = unit.value as InferUnitValue<Defs[K]>;
         appCache[finalKey as keyof AppObj] = value;
         return value;
@@ -72,7 +72,7 @@ export function createApp<Defs extends DefList>(defs: Defs) {
         ? finalKey.split(".").slice(0, -1).join(".")
         : parent;
 
-      if (isBindedDef(unit)) {
+      if (isBound(unit)) {
         const value = unit.value.bind(
           getInjector(finalParent),
         ) as InferUnitValue<Defs[K]>;
@@ -81,7 +81,7 @@ export function createApp<Defs extends DefList>(defs: Defs) {
         return value;
       }
 
-      if (isFactoryDef(unit)) {
+      if (isFactory(unit)) {
         const value = unit.value(getInjector(finalParent)) as InferUnitValue<
           Defs[K]
         >;
@@ -91,8 +91,6 @@ export function createApp<Defs extends DefList>(defs: Defs) {
       }
 
       throw new Error(`Wrong format in "${String(finalKey)}"`);
-      // appCache[finalKey as keyof AppObj] = unit as InferUnitValue<Defs[K]>;
-      // return unit as InferUnitValue<Defs[K]>;
     };
 
     injectors.set(parent, injector as BulkInjector);
@@ -119,14 +117,14 @@ export function block<D extends DefList, Prefix extends string>(
   };
 }
 
-function isBindedDef<T extends Func>(unit: Definition): unit is BindedDef<T> {
-  return unit.type === "binded";
+function isBound<T extends Func>(unit: Definition): unit is BoundDef<T> {
+  return unit.type === "bound";
 }
-function isFactoryDef<T extends Func>(unit: Definition): unit is FactoryDef<T> {
+function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
   return unit.type === "factory";
 }
-function isValueDef<T>(unit: Definition): unit is ValudeDef<T> {
-  return unit.type === "value";
+function isPlain<T>(unit: Definition): unit is PlainDef<T> {
+  return unit.type === "plain";
 }
 
 // =======
@@ -134,8 +132,8 @@ function isValueDef<T>(unit: Definition): unit is ValudeDef<T> {
 type DefList = Record<string, Definition>;
 type List = Record<string, any>;
 
-interface BindedDef<T> {
-  type: "binded";
+interface BoundDef<T> {
+  type: "bound";
   value: T & ThisType<BulkInjector>;
   parent?: string;
 }
@@ -146,22 +144,22 @@ interface FactoryDef<T> {
   parent?: string;
 }
 
-interface ValudeDef<T> {
-  type: "value";
+interface PlainDef<T> {
+  type: "plain";
   value: T;
   parent?: string;
 }
 
-type Definition = BindedDef<any> | FactoryDef<any> | ValudeDef<any>;
+type Definition = BoundDef<any> | FactoryDef<any> | PlainDef<any>;
 
 type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
 type InferUnitValue<D> =
   D extends FactoryDef<infer T>
     ? T
-    : D extends BindedDef<infer B>
+    : D extends BoundDef<infer B>
       ? OmitThisParameter<B>
-      : D extends ValudeDef<infer V>
+      : D extends PlainDef<infer V>
         ? V
         : never;
 
