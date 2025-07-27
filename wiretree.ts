@@ -212,6 +212,6 @@ export function getFakeInjector<L extends List, P extends string>(
     if (key in list) {
       return list[key as keyof L];
     }
-    throw new Error(`Key ${key} not found in fake block`);
+    throw new Error(`Unit "${key}" not found in fake block`);
   } as BlockInjector<L, P>;
 }

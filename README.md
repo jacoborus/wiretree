@@ -9,8 +9,8 @@ instead, they represent units that share the same namespace.
 Example:
 
 ```ts
-import { db } from "../db.ts";
 import { createApp, defValue } from "wiretree";
+import { db } from "../db.ts";
 import { postService } from "../post/postService.ts";
 import { userService } from "../user/userService.ts";
 
