@@ -11,7 +11,7 @@ Example:
 
 ```ts
 import { db } from "../db.ts";
-import { createApp, createApp, defValue } from "hardwire";
+import { createApp, defValue } from "hardwire";
 import { postService } from "../post/postService.ts";
 import { userService } from "../user/userService.ts";
 
@@ -79,13 +79,13 @@ export function addPost(
   return id;
 }
 
-export function getPost(this: I, id: string) {
+export function getPost(this: I) {
   const db = this("db");
-  return db.posts.find((post) => post.id === id);
+  return (id: string) => db.posts.find((post) => post.id === id);
 }
 
 export const postService = createBlock("@post", {
-  getPost: defBinded(getPost),
   addPost: defBinded(addPost),
+  getPost: defFactory(getPost),
 });
 ```
