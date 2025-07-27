@@ -1,3 +1,24 @@
+export function defValue<T>(unit: T) {
+  return {
+    type: "value",
+    value: unit,
+  } as const;
+}
+
+export function defFactory<T>(unit: T) {
+  return {
+    type: "factory",
+    value: unit,
+  } as const;
+}
+
+export function defBinded<T>(unit: T) {
+  return {
+    type: "binded",
+    value: unit,
+  } as const;
+}
+
 export function createApp<Defs extends DefList>(defs: Defs) {
   type AppObj = BuildMap<Defs>;
   const appCache: Partial<AppObj> = {};
@@ -80,27 +101,6 @@ export function createApp<Defs extends DefList>(defs: Defs) {
   }
 }
 
-export function defFactory<T>(unit: T) {
-  return {
-    type: "factory",
-    value: unit,
-  } as const;
-}
-
-export function defBinded<T>(unit: T) {
-  return {
-    type: "binded",
-    value: unit,
-  } as const;
-}
-
-export function defValue<T>(unit: T) {
-  return {
-    type: "value",
-    value: unit,
-  } as const;
-}
-
 export function createBlock<D extends DefList, Prefix extends string>(
   name: Prefix,
   units: D,
@@ -156,10 +156,14 @@ type Definition = BindedDef<any> | FactoryDef<any> | ValudeDef<any>;
 
 type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
-type InferUnitValue<D> = D extends FactoryDef<infer T> ? T
-  : D extends BindedDef<infer B> ? OmitThisParameter<B>
-  : D extends ValudeDef<infer V> ? V
-  : never;
+type InferUnitValue<D> =
+  D extends FactoryDef<infer T>
+    ? T
+    : D extends BindedDef<infer B>
+      ? OmitThisParameter<B>
+      : D extends ValudeDef<infer V>
+        ? V
+        : never;
 
 type Func = (...args: any[]) => any;
 
@@ -187,10 +191,13 @@ type BlockInjector<L extends List, P extends string> = <
   K extends BlockKeys<L, P>,
 >(
   key: K,
-) => K extends keyof L ? L[K]
-  : K extends `.${string}` ? `${P}${K}` extends keyof L ? L[`${P}${K}`]
-    : never
-  : never;
+) => K extends keyof L
+  ? L[K]
+  : K extends `.${string}`
+    ? `${P}${K}` extends keyof L
+      ? L[`${P}${K}`]
+      : never
+    : never;
 
 export type InjectFrom<L extends List, B extends string> = BlockInjector<
   BuildMap<L>,

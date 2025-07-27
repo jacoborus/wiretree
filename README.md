@@ -1,17 +1,16 @@
-# Hardwire
+# Wiretree
 
-**Hardwire** is a TypeScript-based compositional dependency injection framework
-that enables you to build scalable, maintainable applications following
-S.O.L.I.D principles.
+**Wiretree** is a TypeScript-based compositional dependency injection framework
+that enables you to build scalable, maintainable and testable applications.
 
-Hardwire apps are structured in units and blocks. Blocks represent units that
-share the same namespace
+Wiretree apps are structured in units and blocks. Blocks do not contain units,
+instead, they represent units that share the same namespace. 
 
 Example:
 
 ```ts
 import { db } from "../db.ts";
-import { createApp, defValue } from "hardwire";
+import { createApp, defValue } from "wiretree";
 import { postService } from "../post/postService.ts";
 import { userService } from "../user/userService.ts";
 
@@ -30,7 +29,7 @@ addUser("John", "doe@example.com");
 ```
 
 ```ts
-import { createBlock, defBinded, type InjectFrom } from "hardwire";
+import { createBlock, defBinded, type InjectFrom } from "wiretree";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@user">;
@@ -58,7 +57,7 @@ export const userService = createBlock("@user", {
 ```
 
 ```ts
-import { createBlock, defBinded, defFactory, type InjectFrom } from "hardwire";
+import { createBlock, defBinded, defFactory, type InjectFrom } from "wiretree";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@post">;
