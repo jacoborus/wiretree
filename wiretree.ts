@@ -2,6 +2,31 @@ const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
 const boundSymbol = Symbol("bound");
 
+/**
+ * Creates a unit definition that stores a static value.
+ *
+ * Value definitions are perfect for functions that do not require injection,
+ * or any singleton-like value that should be shared across the application.
+ * The value is resolved once and cached for all subsequent requests.
+ *
+ * @template T - The type of the value to be stored
+ *
+ * @param unit - The static value or object to be injected
+ *
+ * @returns A value definition object
+ *
+ * @example
+ * ```ts
+ * const config = plain({
+ *   apiUrl: "https://api.example.com",
+ *   timeout: 5000,
+ *   retries: 3
+ * });
+ *
+ *
+ * const database = plain(createDatabaseConnection());
+ * ```
+ */
 export function plain<T>(unit: T) {
   return {
     type: plainSymbol,
@@ -9,6 +34,31 @@ export function plain<T>(unit: T) {
   } as const;
 }
 
+/**
+ * Creates a unit definition that will generate a new instance of the unit.
+ * It will be cached and reused.
+ *
+ * Factory units are useful for creating instances that require dependencies or
+ * require some computation that only has to run once.
+ * The factory function bets bound to the injector, allowing it to access other
+ * units during instantiation.
+ *
+ * @template T - The type returned by the factory function
+ *
+ * @param unit - A factory function that creates instances of type T
+ *
+ * @returns A factory definition object
+ *
+ * @example
+ * ```ts
+ * const httpClient = factory((this: Injector) => {
+ *   const config = this("config");
+ *   return new HttpClient(config.apiUrl);
+ * });
+ *
+ * const logger = factory(() => new Logger());
+ * ```
+ */
 export function factory<T>(unit: T) {
   return {
     type: factorySymbol,
@@ -16,6 +66,30 @@ export function factory<T>(unit: T) {
   } as const;
 }
 
+/**
+ * Creates a bound definition where the unit is a function that is bound to the
+ * dependency injection context. It will be cached and reused
+ *
+ * Bound definitions are ideal for functions that need access to other units
+ * through the `this` context. The function will be bound to an injector, allowing
+ * it to call `this("dependencyKey")` to resolve other units.
+ *
+ * @template T - The type of the function to be bound
+ *
+ * @param unit - A function that will be bound to the injection context
+ *
+ * @returns A bound definition object with type metadata
+ *
+ * @example
+ * ```ts
+ * const userService = bound(function(this: Injector, id: string) {
+ *   const db = this("db");
+ *   const log = this("logger.log");
+ *   log('Fetching user:', id);
+ *   return db.users.find(user => user.id === id);
+ * });
+ * ```
+ */
 export function bound<T>(unit: T) {
   return {
     type: boundSymbol,
@@ -23,6 +97,33 @@ export function bound<T>(unit: T) {
   } as const;
 }
 
+/**
+ * Creates the main application injector that manages all units and their resolution.
+ *
+ * This is the core function that creates a dependency injection container. It provides
+ * automatic dependency resolution, caching, and hierarchical dependency management.
+ * The returned injector function can resolve any unit defined in the application.
+ *
+ * @template Defs - The type of the unit definitions object
+ *
+ * @param defs - Object containing all unit definitions for the application
+ *
+ * @returns The root injector function that can resolve any unit by key
+ *
+ * @example
+ * ```ts
+ * const app = createApp({
+ *   db: plain(database),
+ *   logger: factory(() => new Logger()),
+ *   ...userModule,
+ * });
+ *
+ * // Use the injector to get units
+ * const db = app("db");
+ * const logger = app("logger");
+ * const getUser = app("@user.service.getUSer");
+ * ```
+ */
 export function createApp<Defs extends DefList>(defs: Defs) {
   type AppObj = BuildMap<Defs>;
   const appCache: Partial<AppObj> = {};
@@ -103,6 +204,36 @@ export function createApp<Defs extends DefList>(defs: Defs) {
   }
 }
 
+/**
+ * Creates a namespaced block of units.
+ *
+ * This function takes a collection of unit definitions and organizes them
+ * under a common namespace. Each definition in the block will have its parent
+ * property augmented to set to the block's name as its antecessor, enabling
+ * hierarchical dependency resolution.
+ *
+ * @template D - The type of the dependency definitions object
+ * @template Prefix - The string literal type of the namespace prefix
+ *
+ * @param name - The namespace prefix for the block (e.g., "@user", "@api")
+ * @param units - Object containing unit definitions to be grouped
+ *
+ * @returns A block object with prefixed parent properties
+ *
+ * @example
+ * ```ts
+ * const userBlock = block("@user", {
+ *   ...userService, // another block
+ *   repository: bound(userRepository),
+ *   validator: plain(new UserValidator()),
+ * });
+ *
+ * // Results in units accessible as:
+ * // "@user.service", "@user.repository", "@user.validator"
+ * // Or from the same block:
+ * // ".service", ".repository", ".validator"
+ * ```
+ */
 export function block<D extends DefList, Prefix extends string>(
   name: Prefix,
   units: D,
