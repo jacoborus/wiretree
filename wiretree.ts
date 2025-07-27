@@ -82,9 +82,9 @@ export function createApp<Defs extends DefList>(defs: Defs) {
       }
 
       if (isFactory(unit)) {
-        const value = unit.value(getInjector(finalParent)) as InferUnitValue<
-          Defs[K]
-        >;
+        const value = unit.value.bind(
+          getInjector(finalParent),
+        )() as InferUnitValue<Defs[K]>;
         localCache[finalKey as keyof AppObj] = value;
         appCache[finalKey as keyof AppObj] = value;
         return value;

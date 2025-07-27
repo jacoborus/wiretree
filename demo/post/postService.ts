@@ -28,8 +28,8 @@ export function addPost(
   return id;
 }
 
-function collection(inject: I) {
-  const db = inject("db");
+function collection(this: I) {
+  const db = this("db");
   return db.posts;
 }
 
