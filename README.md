@@ -24,8 +24,10 @@ export type Defs = typeof defs;
 
 const app = createApp(defs);
 
-const addUser = app("@user.addUser");
-addUser("John", "doe@example.com");
+const addUser = app("@user.add");
+const userId = addUser("John", "doe@example.com");
+const addPost = app('@post.add')
+addPost('The title', 'The content', userId)
 ```
 
 ```ts
@@ -34,12 +36,27 @@ import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@user">;
 
-export function getUser(this: I, id: string) {
+export const userService = block("@user", {
+  getById: bound(getUser),
+  getByEMail: bound(getUserByEmail)
+  add: bound(addUser),
+});
+
+export function getUserById(this: I, id: string) {
   const db = this("db");
   return db.users.find((user) => user.id === id);
 }
 
+export function getUserByEmail(this: I, email: string) {
+  const db = this("db");
+  return db.users.find((user) => user.email === email);
+}
+
 export function addUser(this: I, name: string, email: string, isAdmin = false) {
+  const getByEmail = app('.getByEmail');
+  const existingUser = getByEmail(email)
+  if (existingUser) throw new Error('User already exists')
+
   const user = {
     id: crypto.randomUUID(),
     name,
@@ -49,11 +66,6 @@ export function addUser(this: I, name: string, email: string, isAdmin = false) {
   this("db").users.push(user);
   return user.id;
 }
-
-export const userService = block("@user", {
-  getUser: bound(getUser),
-  addUser: bound(addUser),
-});
 ```
 
 ```ts
@@ -84,7 +96,7 @@ export function getPost(this: I) {
 }
 
 export const postService = block("@post", {
-  addPost: bound(addPost),
-  getPost: factory(getPost),
+  add: bound(addPost),
+  get: factory(getPost),
 });
 ```
