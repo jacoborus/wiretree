@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { getFakeInjector } from "../../wiretree.ts";
+import { getFakeInjector } from "../../src/wiretree.ts";
 import { db as database } from "../db.ts";
 
 import {

@@ -1,4 +1,4 @@
-import { block, bound, type InjectFrom } from "../../wiretree.ts";
+import { block, bound, type InjectFrom } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
 type I = InjectFrom<Defs, "@user">;

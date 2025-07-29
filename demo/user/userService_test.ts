@@ -1,11 +1,11 @@
 import { assertEquals } from "@std/assert";
+import { getFakeInjector } from "../../src/wiretree.ts";
 
 import { User } from "../db.ts";
 import {
   addUser as addUserFactory,
   getUsers as getUsersFactory,
 } from "./userService.ts";
-import { getFakeInjector } from "../../wiretree.ts";
 
 Deno.test(function addUsertTest() {
   const db = { users: [] as User[], posts: [] };
