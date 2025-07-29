@@ -343,7 +343,6 @@ export type InjectFrom<L extends List, B extends string> = BlockInjector<
  * dependency injection without needing a full implementation.
  *
  * @template L - The type of the object containing key-value pairs for the mock injector
- * @template P - The string literal type representing the parent namespace
  *
  * @param list - An object mapping keys to mock values
  *
