@@ -337,7 +337,24 @@ export type InjectFrom<L extends List, B extends string> = BlockInjector<
   B
 >;
 
-// Testing utility
+/**
+ * A utility function designed for testing purposes. It creates a mock injector
+ * that maps keys to values defined in a provided list. This enables simulating
+ * dependency injection without needing a full implementation.
+ *
+ * @template L - The type of the object containing key-value pairs for the mock injector
+ * @template P - The string literal type representing the parent namespace
+ *
+ * @param list - An object mapping keys to mock values
+ *
+ * @returns A mock BlockInjector function that retrieves predefined values based on keys
+ *
+ * @example
+ * ```ts
+ * const fakeInjector = getFakeInjector({ key: "value" });
+ * const value = fakeInjector("key"); // Returns "value"
+ * ```
+ */
 export function getFakeInjector<L extends List, P extends string>(
   list: L,
 ): BlockInjector<L, P> {
