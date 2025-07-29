@@ -355,13 +355,13 @@ export type InjectFrom<L extends List, B extends string> = BlockInjector<
  * const value = fakeInjector("key"); // Returns "value"
  * ```
  */
-export function getFakeInjector<L extends List, P extends string>(
+export function getFakeInjector<L extends List>(
   list: L,
-): BlockInjector<L, P> {
-  return function (key: string) {
+): <K extends keyof L>(key: K) => L[K] {
+  return function <K extends keyof L>(key: K) {
     if (key in list) {
-      return list[key as keyof L];
+      return list[key];
     }
-    throw new Error(`Unit "${key}" not found in fake block`);
-  } as BlockInjector<L, P>;
+    throw new Error(`Unit "${String(key)}" not found in fake block`);
+  };
 }
