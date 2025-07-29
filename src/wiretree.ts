@@ -336,31 +336,3 @@ export type InjectFrom<L extends List, B extends string> = BlockInjector<
   BuildMap<L>,
   B
 >;
-
-/**
- * A utility function designed for testing purposes. It creates a mock injector
- * that maps keys to values defined in a provided list. This enables simulating
- * dependency injection without needing a full implementation.
- *
- * @template L - The type of the object containing key-value pairs for the mock injector
- *
- * @param list - An object mapping keys to mock values
- *
- * @returns A mock BlockInjector function that retrieves predefined values based on keys
- *
- * @example
- * ```ts
- * const fakeInjector = getFakeInjector({ key: "value" });
- * const value = fakeInjector("key"); // Returns "value"
- * ```
- */
-export function getFakeInjector<L extends List>(
-  list: L,
-): <K extends keyof L>(key: K) => L[K] {
-  return function <K extends keyof L>(key: K) {
-    if (key in list) {
-      return list[key];
-    }
-    throw new Error(`Unit "${String(key)}" not found in fake block`);
-  };
-}
