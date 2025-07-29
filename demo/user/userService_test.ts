@@ -1,28 +1,28 @@
 import { assertEquals } from "@std/assert";
-import { getFakeInjector } from "../../src/wiretree.ts";
+import { getFakeInjector, bindThis } from "../../src/testing_util.ts";
 
-import { User } from "../db.ts";
+import type { User, Post } from "../db.ts";
 import {
   addUser as addUserFactory,
   getUsers as getUsersFactory,
 } from "./userService.ts";
 
 Deno.test(function addUsertTest() {
-  const db = { users: [] as User[], posts: [] };
+  const db = { users: [] as User[], posts: [] as Post[] };
 
   const injector = getFakeInjector({
     db,
     ".getUserByEmail": (email: string) => {
       return db.users.find((user) => user.email === email);
     },
-  });
+  }) as any;
 
-  const getUsers = getUsersFactory.bind(injector);
+  const getUsers = bindThis(getUsersFactory, injector);
   let users = getUsers();
   assertEquals(users.length, 0);
 
-  const addUser = addUserFactory.bind(injector);
-  addUser("jacobo", "jacobo@asdfasdf.com", true);
+  const addUser = bindThis(addUserFactory, injector);
+  addUser("john", "john@example.com", true);
   users = getUsers();
   assertEquals(users.length, 1);
 });

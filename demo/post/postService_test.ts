@@ -1,6 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { getFakeInjector } from "../../src/wiretree.ts";
+import { getFakeInjector, bindThis } from "../../src/testing_util.ts";
 import { db as database } from "../db.ts";
+import type { InjectFrom } from "../../src/wiretree.ts";
+import type { Defs } from "../app/app.ts";
 
 import {
   addPost as addPostFactory,
@@ -18,10 +20,10 @@ Deno.test(function addPostTest() {
       email: "asdfasdf@qfasdfasd.asdf",
       isAdmin: true,
     }),
-  });
+  }) as InjectFrom<Defs, "@post">;
 
-  const addPost = addPostFactory.bind(injector);
-  const getPost = getPostFactory.bind(injector);
+  const addPost = bindThis(addPostFactory, injector);
+  const getPost = bindThis(getPostFactory, injector);
   const postId = addPost("titulo", "contenido", "11234");
   const post = getPost(postId);
   assertEquals(post?.id, postId);

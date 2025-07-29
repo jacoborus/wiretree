@@ -1,12 +1,6 @@
 import { assertEquals } from "@std/assert";
-import {
-  getFakeInjector,
-  plain,
-  factory,
-  bound,
-  createApp,
-  block,
-} from "./wiretree.ts";
+import { plain, factory, bound, createApp, block } from "./wiretree.ts";
+import { getFakeInjector } from "./testing_util.ts";
 
 Deno.test("plain function creates value definition", () => {
   const valueDef = plain("testValue");
