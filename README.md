@@ -53,7 +53,7 @@ log("Application started!");
 
 ### Unit Types
 
-Wiretree provides four types of unit definitions:
+Wiretree provides three types of unit definitions:
 
 #### `plain` - Static Values
 
@@ -76,9 +76,9 @@ Create instances on-demand with access to other dependencies. Results are
 cached.
 
 ```ts
-const httpClient = factory(function (this: Injector) {
-  const config = this("config");
-  return new HttpClient(config.apiUrl);
+const getPrice = factory(function (this: Injector) {
+  const { fee } = this("config");
+  return (p: number) => p + config.fee;
 });
 
 const cache = factory(() => new Map());

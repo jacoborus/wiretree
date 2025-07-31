@@ -1,32 +1,29 @@
-import { block, bound, type InjectFrom } from "../../src/wiretree.ts";
+import { getInjector, type InjectFrom } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
-type I = InjectFrom<Defs, "@user">;
+const ii = getInjector<Defs>()("@user.service") as InjectFrom<
+  Defs,
+  "@user.service"
+>;
+const inj = ii as InjectFrom<Defs, "@user.service">;
 
-export const userService = block("@user", {
-  getUser: bound(getUser),
-  getUserByEmail: bound(getUserByEmail),
-  getUsers: bound(getUsers),
-  addUser: bound(addUser),
-});
-
-export function getUsers(this: I) {
-  const db = this("db");
+export function getUsers() {
+  const db = inj("db");
   return db.users;
 }
 
-export function getUser(this: I, id: string) {
-  const db = this("db");
+export function getUser(id: string) {
+  const db = inj("db");
   return db.users.find((user) => user.id === id);
 }
 
-export function getUserByEmail(this: I, email: string) {
-  const db = this("db");
+export function getUserByEmail(email: string) {
+  const db = inj("db");
   return db.users.find((user) => user.email === email);
 }
 
-export function addUser(this: I, name: string, email: string, isAdmin = false) {
-  const getUserByEmail = this(".getUserByEmail");
+export function addUser(name: string, email: string, isAdmin = false) {
+  const getUserByEmail = inj(".getUserByEmail");
   const existingUser = getUserByEmail(email);
   if (existingUser) {
     throw new Error(`User with email ${email} already exists.`);
@@ -38,6 +35,6 @@ export function addUser(this: I, name: string, email: string, isAdmin = false) {
     email,
     isAdmin,
   };
-  this("db").users.push(user);
+  inj("db").users.push(user);
   return user.id;
 }

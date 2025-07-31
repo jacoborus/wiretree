@@ -1,6 +1,5 @@
 const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
-const boundSymbol = Symbol("bound");
 
 /**
  * Creates a unit definition that stores a static value.
@@ -27,10 +26,11 @@ const boundSymbol = Symbol("bound");
  * const database = plain(createDatabaseConnection());
  * ```
  */
-export function plain<T>(unit: T) {
+export function plain<T>(unit: T): PlainDef<T> {
   return {
     type: plainSymbol,
     value: unit,
+    parent: undefined as undefined | string,
   } as const;
 }
 
@@ -63,40 +63,22 @@ export function factory<T>(unit: T) {
   return {
     type: factorySymbol,
     value: unit,
+    parent: undefined as undefined | string,
   } as const;
 }
 
-/**
- * Creates a bound definition where the unit is a function that is bound to the
- * dependency injector.
- *
- * Bound definitions are ideal for functions that need access to other units
- * through the `this` context. The function will be bound to an injector, allowing
- * it to call `this("dependencyKey")` to resolve other units.
- *
- * @template T - The type of the function to be bound
- *
- * @param unit - A function that will be bound to the injection context
- *
- * @returns A bound definition object with type metadata
- *
- * @example
- * ```ts
- * const userService = bound(function(this: Injector, id: string) {
- *   const db = this("db");
- *   const log = this("logger.log");
- *   log('Fetching user:', id);
- *   return db.users.find(user => user.id === id);
- * });
- * ```
- */
-export function bound<T>(unit: T) {
-  return {
-    type: boundSymbol,
-    value: unit,
-  } as const;
-}
+let currentNamespace = "";
+const mainCache: List = {};
+const injectors = new Map<string, BulkInjector>();
+let mainDefs: List = {};
 
+export function getInjector<L extends List>() {
+  return function <N extends string>(
+    namespace: N,
+  ): BlockInjector<BuildMap<L>, N> {
+    return createInjector(namespace);
+  };
+}
 /**
  * Creates the main application injector that manages all units and their resolution.
  *
@@ -124,84 +106,111 @@ export function bound<T>(unit: T) {
  * const getUser = app("@user.service.getUSer");
  * ```
  */
-export function createApp<Defs extends DefList>(defs: Defs) {
-  type AppObj = BuildMap<Defs>;
-  const appCache: Partial<AppObj> = {};
-  const injectors = new Map<string, BulkInjector>();
-  const appInjector = getInjector("");
+export function createApp<Defs extends List>(defs: Defs) {
+  mainDefs = defs;
+  const appInjector = createInjector<Defs, "">("");
   injectors.set("", appInjector as BulkInjector);
   return appInjector;
+}
 
-  function getInjector<P extends string>(parent: P): BlockInjector<AppObj, P> {
-    if (injectors.has(parent)) {
-      return injectors.get(parent) as BlockInjector<AppObj, P>;
+function createInjector<Defs extends List, P extends string>(
+  parent: string,
+): BlockInjector<BuildMap<Defs>, typeof parent> {
+  type AppObj = BuildMap<Defs>;
+  if (injectors.has(parent)) {
+    return injectors.get(parent) as BlockInjector<AppObj, P>;
+  }
+
+  const appCache = mainCache as Partial<AppObj>;
+  const localCache: Partial<AppObj> = {};
+
+  const injector = function <K extends keyof AppObj>(key: K): AppObj[K] {
+    if (key in localCache) {
+      return localCache[key] as AppObj[K];
     }
 
-    const localCache: Partial<AppObj> = {};
+    if (typeof key !== "string") {
+      throw new Error(`Key must be a string, received: ${typeof key}`);
+    }
 
-    const injector = function app<K extends keyof AppObj>(key: K): AppObj[K] {
-      if (key in localCache) {
-        return localCache[key] as AppObj[K];
+    const finalKey = key.startsWith(".") ? `${parent}${String(key)}` : key;
+
+    if (finalKey in appCache) {
+      const unit = appCache[
+        finalKey as keyof typeof appCache
+      ] as InferUnitValue<Defs[K]>;
+      localCache[key] = unit;
+      return unit;
+    }
+
+    const def = mainDefs[finalKey];
+
+    if (!def) {
+      throw new Error(
+        `Key ${String(finalKey)} not found from block "${parent}"`,
+      );
+    }
+
+    if (isPlain(def)) {
+      const value = def.value as InferUnitValue<Defs[K]>;
+      appCache[finalKey as keyof AppObj] = value;
+      return value;
+    }
+
+    const finalParent = finalKey.includes(".")
+      ? finalKey.split(".").slice(0, -1).join(".")
+      : parent;
+
+    if (isFactory(def)) {
+      const value = def.value(createInjector(finalParent)) as InferUnitValue<
+        Defs[K]
+      >;
+      localCache[finalKey as keyof AppObj] = value;
+      appCache[finalKey as keyof AppObj] = value;
+      return value;
+    }
+
+    if (isPlain(def)) {
+      if (typeof def.value === "function") {
+        const f = function () {
+          const fun = def.value as Func;
+          const prevNamespace = currentNamespace;
+          currentNamespace = finalParent;
+          const result = fun(arguments);
+          currentNamespace = prevNamespace;
+          return result;
+        };
+
+        localCache[finalKey as keyof AppObj] = f;
+        appCache[finalKey as keyof AppObj] = f;
+        return f as typeof def;
       }
 
-      if (typeof key !== "string") {
-        throw new Error(`Key must be a string, received: ${typeof key}`);
-      }
+      localCache[finalKey as keyof AppObj] = def.value;
+      appCache[finalKey as keyof AppObj] = def.value;
+      return def.value as typeof def;
+    }
 
-      const finalKey = key.startsWith(".") ? `${parent}${String(key)}` : key;
+    if (typeof def.value === "function") {
+      const f = function () {
+        const prevNamespace = currentNamespace;
+        currentNamespace = finalParent;
+        const result = def.call(arguments);
+        currentNamespace = prevNamespace;
+        return result;
+      };
 
-      if (finalKey in appCache) {
-        const unit = appCache[
-          finalKey as keyof typeof appCache
-        ] as InferUnitValue<Defs[K]>;
-        localCache[key] = unit;
-        return unit;
-      }
+      localCache[finalKey as keyof AppObj] = f;
+      appCache[finalKey as keyof AppObj] = f;
+      return f as typeof def;
+    }
 
-      const unit = Object.entries(defs).find(
-        ([name, def]) =>
-          (def.parent ? `${def.parent}.${name}` : name) === finalKey,
-      )?.[1];
+    return def;
+  };
 
-      if (!unit) {
-        throw new Error(`Key ${String(finalKey)} not found in block`);
-      }
+  injectors.set(parent, injector as BulkInjector);
 
-      if (isPlain(unit)) {
-        const value = unit.value as InferUnitValue<Defs[K]>;
-        appCache[finalKey as keyof AppObj] = value;
-        return value;
-      }
-
-      const finalParent = finalKey.includes(".")
-        ? finalKey.split(".").slice(0, -1).join(".")
-        : parent;
-
-      if (isBound(unit)) {
-        const value = unit.value.bind(
-          getInjector(finalParent),
-        ) as InferUnitValue<Defs[K]>;
-        localCache[finalKey as keyof AppObj] = value;
-        appCache[finalKey as keyof AppObj] = value;
-        return value;
-      }
-
-      if (isFactory(unit)) {
-        const value = unit.value.bind(
-          getInjector(finalParent),
-        )() as InferUnitValue<Defs[K]>;
-        localCache[finalKey as keyof AppObj] = value;
-        appCache[finalKey as keyof AppObj] = value;
-        return value;
-      }
-
-      throw new Error(`Wrong format in "${String(finalKey)}"`);
-    };
-
-    injectors.set(parent, injector as BulkInjector);
-
-    return injector as BlockInjector<AppObj, P>;
-  }
+  return injector as BlockInjector<AppObj, P>;
 }
 
 /**
@@ -224,7 +233,7 @@ export function createApp<Defs extends DefList>(defs: Defs) {
  * ```ts
  * const userBlock = block("@user", {
  *   ...userService, // another block
- *   repository: bound(userRepository),
+ *   repository: userRepository,
  *   validator: plain(new UserValidator()),
  * });
  *
@@ -234,44 +243,42 @@ export function createApp<Defs extends DefList>(defs: Defs) {
  * // ".service", ".repository", ".validator"
  * ```
  */
-export function block<D extends DefList, Prefix extends string>(
+export function block<D extends List, Prefix extends string>(
   name: Prefix,
   units: D,
 ) {
   return Object.fromEntries(
-    Object.entries(units).map(([key, value]) => [
-      key,
-      {
-        type: value.type,
-        value: value.value,
-        parent: value.parent ? `${name}.${value.parent}` : name,
-      },
-    ]),
+    Object.entries(units).map(([key, value]) => {
+      const def = isFactory(value)
+        ? value
+        : isPlain(value)
+          ? value
+          : plain(value);
+
+      return [
+        `${name}.${key}`,
+        {
+          type: def.type,
+          value: def.value,
+        },
+      ];
+    }),
   ) as {
     [K in keyof D]: ParentedDefinition<Prefix, D[K]>;
   };
 }
 
-function isBound<T extends Func>(unit: Definition): unit is BoundDef<T> {
-  return unit.type === boundSymbol;
+function isPlain<T>(unit: Definition): unit is PlainDef<T> {
+  return unit.type === plainSymbol;
 }
 function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
   return unit.type === factorySymbol;
-}
-function isPlain<T>(unit: Definition): unit is PlainDef<T> {
-  return unit.type === plainSymbol;
 }
 
 // =======
 
 type DefList = Record<string, Definition>;
 type List = Record<string, any>;
-
-interface BoundDef<T> {
-  type: typeof boundSymbol;
-  value: T & ThisType<BulkInjector>;
-  parent?: string;
-}
 
 interface FactoryDef<T> {
   type: typeof factorySymbol;
@@ -285,18 +292,16 @@ interface PlainDef<T> {
   parent?: string;
 }
 
-type Definition = BoundDef<any> | FactoryDef<any> | PlainDef<any>;
+type Definition = FactoryDef<any> | PlainDef<any>;
 
 type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
 type InferUnitValue<D> =
   D extends FactoryDef<infer T>
-    ? T
-    : D extends BoundDef<infer B>
-      ? OmitThisParameter<B>
-      : D extends PlainDef<infer V>
-        ? V
-        : never;
+    ? T //
+    : D extends PlainDef<infer V>
+      ? V
+      : D;
 
 type Func = (...args: any[]) => any;
 

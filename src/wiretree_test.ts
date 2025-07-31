@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { plain, factory, bound, createApp, block } from "./wiretree.ts";
-import { getFakeInjector } from "./testing_util.ts";
+import { plain, factory, createApp, block } from "./wiretree.ts";
+import { getFakeInjector } from "./test_utils.ts";
 
 Deno.test("plain function creates value definition", () => {
   const valueDef = plain("testValue");
@@ -17,15 +17,15 @@ Deno.test("factory function creates and caches instances", () => {
   assertEquals(instance.key, "value");
 });
 
-Deno.test("bound function binds function to injector", () => {
-  const injector = getFakeInjector({ key: "value" });
-  const boundFn = bound(function (this: typeof injector) {
-    return this("key");
-  });
-
-  const boundInstance = boundFn.value.bind(injector);
-  assertEquals(boundInstance(), "value");
-});
+// Deno.test("bound function binds function to injector", () => {
+//   const injector = getFakeInjector({ key: "value" });
+//   const boundFn = bound(function (this: typeof injector) {
+//     return this("key");
+//   });
+//
+//   const boundInstance = boundFn.value.bind(injector);
+//   assertEquals(boundInstance(), "value");
+// });
 
 Deno.test("createApp resolves dependencies", () => {
   const defs = {
@@ -43,15 +43,15 @@ Deno.test("block creates namespaced definitions", () => {
   const blockInstance = block("namespace", {
     key: plain("value"),
   });
+  console.log(blockInstance);
 
   const blockParent = block("@parent", {
     ...blockInstance,
   });
 
-  assertEquals(blockInstance.key.type.description, "plain");
-  assertEquals(blockInstance.key.value, "value");
-  assertEquals(blockInstance.key.parent, "namespace");
-  assertEquals(blockParent.key.parent, "@parent.namespace");
+  assertEquals(blockInstance["namespace.key"].type.description, "plain");
+  assertEquals(blockInstance["namespace.key"].value, "value");
+  assertEquals(blockParent["@parent.namespace.key"].value, "value");
 });
 
 Deno.test("error handling for missing dependencies", () => {
@@ -68,15 +68,18 @@ Deno.test("error handling for missing dependencies", () => {
         throw new Error("Should have thrown an error");
       } catch (e: unknown) {
         if (e instanceof Error) {
-          assertEquals(e.message, "Key nonexistent not found in block");
+          assertEquals(e.message, 'Key nonexistent not found from block ""');
         }
       }
     } catch (e) {
-      assertEquals((e as Error).message, "Key nonexistent not found in block");
+      assertEquals(
+        (e as Error).message,
+        'Key nonexistent not found from block ""',
+      );
     }
   } catch (error) {
     if (error instanceof Error) {
-      assertEquals(error.message, "Key nonexistent not found in block");
+      assertEquals(error.message, 'Key nonexistent not found from block ""');
     }
   }
 });

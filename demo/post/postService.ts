@@ -1,41 +1,35 @@
-import { block, bound, factory, type InjectFrom } from "../../src/wiretree.ts";
+import { getInjector, type InjectFrom, factory } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
-type I = InjectFrom<Defs, "@post">;
+const ii = getInjector<Defs>()("@post.service") as InjectFrom<
+  Defs,
+  "@post.service"
+>;
 
-export function getPosts(this: I) {
-  const collection = this(".collection");
+const inj = ii as InjectFrom<Defs, "@post.service">;
+
+export function getPosts() {
+  const collection = inj(".collection");
   return collection.slice();
 }
 
-export function getPost(this: I, id: string) {
-  const db = this("db");
+export function getPost(id: string) {
+  const db = inj("db");
   return db.posts.find((post) => post.id === id);
 }
 
-export function addPost(
-  this: I,
-  title: string,
-  content: string,
-  userId: string,
-) {
-  const getUser = this("@user.getUser");
-  const db = this("db");
+export function addPost(title: string, content: string, userId: string) {
+  const getUser = inj("@user.service.getUser");
   const user = getUser(userId);
   if (!user) throw new Error(`User with id ${userId} does not exist.`);
+
+  const db = inj("db");
   const id = crypto.randomUUID();
   db.posts.push({ id, title, userId, content });
   return id;
 }
 
-function collection(this: I) {
-  const db = this("db");
+export const collection = factory((inj: InjectFrom<Defs, "@post.service">) => {
+  const db = inj("db");
   return db.posts;
-}
-
-export const postService = block("@post", {
-  getPosts: bound(getPosts),
-  getPost: bound(getPost),
-  addPost: bound(addPost),
-  collection: factory(collection),
 });
