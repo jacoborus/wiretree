@@ -10,8 +10,7 @@
     "include": [
       "LICENSE",
       "README.md",
-      "src/wiretree.ts",
-      "src/test_utils.ts"
+      "src/wiretree.ts"
     ]
   },
   "imports": {

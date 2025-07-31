@@ -1,5 +1,3 @@
-import { getFakeInjector } from "./test_utils.ts";
-
 const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
 

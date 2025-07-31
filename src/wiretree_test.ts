@@ -16,16 +16,6 @@ Deno.test("factory function creates and caches instances", () => {
   assertEquals(instance.key, "value");
 });
 
-// Deno.test("bound function binds function to injector", () => {
-//   const injector = getFakeInjector({ key: "value" });
-//   const boundFn = bound(function (this: typeof injector) {
-//     return this("key");
-//   });
-//
-//   const boundInstance = boundFn.value.bind(injector);
-//   assertEquals(boundInstance(), "value");
-// });
-
 Deno.test("createApp resolves dependencies", () => {
   const defs = {
     key: plain("value"),
