@@ -1,5 +1,5 @@
 import { db } from "../db.ts";
-import postMod from "../post/post-mod.ts";
+import postMod from "../post/postMod.ts";
 import userMod from "../user/userMod.ts";
 import { createApp, plain } from "../../src/wiretree.ts";
 
