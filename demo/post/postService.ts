@@ -1,12 +1,8 @@
-import { getInjector, type InjectFrom, factory } from "../../src/wiretree.ts";
+import { getInjector, factory } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
-const ii = getInjector<Defs>()("@post.service") as InjectFrom<
-  Defs,
-  "@post.service"
->;
-
-const inj = ii as InjectFrom<Defs, "@post.service">;
+const inj = getInjector<Defs>()("@post.service");
+type I = typeof inj;
 
 export function getPosts() {
   const collection = inj(".collection");
@@ -29,7 +25,7 @@ export function addPost(title: string, content: string, userId: string) {
   return id;
 }
 
-export const collection = factory((inj: InjectFrom<Defs, "@post.service">) => {
+export const collection = factory((inj: I) => {
   const db = inj("db");
   return db.posts;
 });

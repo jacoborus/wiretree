@@ -1,6 +1,5 @@
 import { assertEquals } from "@std/assert";
 import { plain, factory, createApp, block } from "./wiretree.ts";
-import { getFakeInjector } from "./test_utils.ts";
 
 Deno.test("plain function creates value definition", () => {
   const valueDef = plain("testValue");
@@ -43,7 +42,6 @@ Deno.test("block creates namespaced definitions", () => {
   const blockInstance = block("namespace", {
     key: plain("value"),
   });
-  console.log(blockInstance);
 
   const blockParent = block("@parent", {
     ...blockInstance,

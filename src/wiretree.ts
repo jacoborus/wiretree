@@ -1,5 +1,12 @@
+import { getFakeInjector } from "./test_utils.ts";
+
 const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
+
+let currentNamespace = "";
+let mainCache: List = {};
+let injectors = new Map<string, BulkInjector>();
+let mainDefs: List = {};
 
 /**
  * Creates a unit definition that stores a static value.
@@ -65,11 +72,6 @@ export function factory<T>(unit: T) {
   } as const;
 }
 
-let currentNamespace = "";
-const mainCache: List = {};
-const injectors = new Map<string, BulkInjector>();
-let mainDefs: List = {};
-
 export function getInjector<L extends List>() {
   return function <N extends string>(
     namespace: N,
@@ -119,7 +121,6 @@ function createInjector<Defs extends List, P extends string>(
     return injectors.get(parent) as BlockInjector<AppObj, P>;
   }
 
-  const appCache = mainCache as Partial<AppObj>;
   const localCache: Partial<AppObj> = {};
 
   const injector = function <K extends keyof AppObj>(key: K): AppObj[K] {
@@ -133,9 +134,9 @@ function createInjector<Defs extends List, P extends string>(
 
     const finalKey = key.startsWith(".") ? `${parent}${String(key)}` : key;
 
-    if (finalKey in appCache) {
-      const unit = appCache[
-        finalKey as keyof typeof appCache
+    if (finalKey in mainCache) {
+      const unit = mainCache[
+        finalKey as keyof typeof mainCache
       ] as InferUnitValue<Defs[K]>;
       localCache[key] = unit;
       return unit;
@@ -151,7 +152,7 @@ function createInjector<Defs extends List, P extends string>(
 
     if (isPlain(def)) {
       const value = def.value as InferUnitValue<Defs[K]>;
-      appCache[finalKey as keyof AppObj] = value;
+      mainCache[finalKey as keyof AppObj] = value;
       return value;
     }
 
@@ -164,7 +165,7 @@ function createInjector<Defs extends List, P extends string>(
         Defs[K]
       >;
       localCache[finalKey as keyof AppObj] = value;
-      appCache[finalKey as keyof AppObj] = value;
+      mainCache[finalKey as keyof AppObj] = value;
       return value;
     }
 
@@ -174,33 +175,33 @@ function createInjector<Defs extends List, P extends string>(
           const fun = def.value as Func;
           const prevNamespace = currentNamespace;
           currentNamespace = finalParent;
-          const result = fun(arguments);
+          const result = fun(...arguments);
           currentNamespace = prevNamespace;
           return result;
-        };
+        } as AppObj[keyof AppObj];
 
         localCache[finalKey as keyof AppObj] = f;
-        appCache[finalKey as keyof AppObj] = f;
-        return f as typeof def;
+        mainCache[finalKey as keyof AppObj] = f;
+        return f as AppObj[K];
       }
 
-      localCache[finalKey as keyof AppObj] = def.value;
-      appCache[finalKey as keyof AppObj] = def.value;
-      return def.value as typeof def;
+      localCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
+      mainCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
+      return def.value as AppObj[K];
     }
 
     if (typeof def.value === "function") {
       const f = function () {
         const prevNamespace = currentNamespace;
         currentNamespace = finalParent;
-        const result = def.call(arguments);
+        const result = def.value(...arguments);
         currentNamespace = prevNamespace;
         return result;
-      };
+      } as AppObj[keyof AppObj];
 
       localCache[finalKey as keyof AppObj] = f;
-      appCache[finalKey as keyof AppObj] = f;
-      return f as typeof def;
+      mainCache[finalKey as keyof AppObj] = f;
+      return f as AppObj[K];
     }
 
     return def;
@@ -262,6 +263,26 @@ export function block<L extends List, Prefix extends string>(
       ];
     }),
   ) as Namespaced<Prefix, L>;
+}
+
+export function mockUnit<D extends Func, L extends List, N extends string>(
+  unit: D,
+  units: L,
+  namespace: N,
+): D {
+  return function () {
+    const oldMainCache = mainCache;
+    const prevNamespace = currentNamespace;
+    const oldInjectors = injectors;
+    mainCache = units;
+    injectors = new Map();
+    currentNamespace = namespace;
+    const result = unit(...arguments);
+    currentNamespace = prevNamespace;
+    mainCache = oldMainCache;
+    injectors = oldInjectors;
+    return result;
+  } as D;
 }
 
 function isPlain<T>(unit: Definition): unit is PlainDef<T> {
@@ -329,8 +350,3 @@ type BlockInjector<L extends List, P extends string> = <
       ? L[`${P}${K}`]
       : never
     : never;
-
-export type InjectFrom<L extends List, B extends string> = BlockInjector<
-  BuildMap<L>,
-  B
->;

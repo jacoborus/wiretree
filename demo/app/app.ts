@@ -17,6 +17,7 @@ export const app = createApp(defs);
 
 console.log(app("valor"));
 console.log(app("test")());
+
 const addUser = app("@user.service.addUser");
 const userId = addUser("jacobo", "jacobo@example.com", true);
 console.log(app("@user.service.getUsers")());

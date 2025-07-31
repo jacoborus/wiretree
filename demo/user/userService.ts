@@ -1,11 +1,7 @@
-import { getInjector, type InjectFrom } from "../../src/wiretree.ts";
+import { getInjector } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
-const ii = getInjector<Defs>()("@user.service") as InjectFrom<
-  Defs,
-  "@user.service"
->;
-const inj = ii as InjectFrom<Defs, "@user.service">;
+const inj = getInjector<Defs>()("@user.service");
 
 export function getUsers() {
   const db = inj("db");

@@ -27,12 +27,12 @@ npm install wiretree
 ## 🚀 Quick Start
 
 ```ts
-import { block, bound, createApp, plain } from "wiretree";
+import { createApp } from "wiretree";
 
 // Define your units
 const defs = {
   config: plain({ apiUrl: "https://api.example.com" }),
-  logger: bound(function (this: App, message: string) {
+  logger: function (message: string) {
     console.log(`[LOG] ${message}`);
   }),
   ...userService, // Import from other modules
@@ -41,7 +41,7 @@ const defs = {
 // Create your application
 const app = createApp(defs);
 
-type App = typeof app;
+type Defs = typeof defs;
 
 // Use your dependencies
 const config = app("config");
@@ -84,20 +84,6 @@ const getPrice = factory(function (this: Injector) {
 const cache = factory(() => new Map());
 ```
 
-#### `bound` - Injectable Functions
-
-Functions that receive the injector as `this` context, enabling dependency
-access.
-
-```ts
-const userService = bound(function (this: Injector, id: string) {
-  const db = this("database");
-  const logger = this("logger");
-
-  logger(`Fetching user: ${id}`);
-  return db.users.find((user) => user.id === id);
-});
-```
 
 ### Blocks and Namespaces
 

@@ -1,30 +1,33 @@
 import { assertEquals } from "@std/assert";
-import { getFakeInjector } from "../../src/test_utils.ts";
-import { db as database } from "../db.ts";
-import type { InjectFrom } from "../../src/wiretree.ts";
-import type { Defs } from "../app/app.ts";
+import { mockUnit } from "../../src/wiretree.ts";
 
+import type { User, Post } from "../db.ts";
 import {
   addPost as addPostFactory,
   getPost as getPostFactory,
 } from "./postService.ts";
 
-// Deno.test(function addPostTest() {
-//   const db = database;
-//
-//   const injector = getFakeInjector({
-//     db,
-//     "@user.getUser": (id: string) => ({
-//       id,
-//       name: "jacobo",
-//       email: "asdfasdf@qfasdfasd.asdf",
-//       isAdmin: true,
-//     }),
-//   }) as InjectFrom<Defs, "@post">;
-//
-//   const addPost = mock(addPostFactory, injector);
-//   const getPost = mock(getPostFactory, injector);
-//   const postId = addPost("titulo", "contenido", "11234");
-//   const post = getPost(postId);
-//   assertEquals(post?.id, postId);
-// });
+Deno.test(function addPostTest() {
+  const db = { user: [] as User[], posts: [] as Post[] };
+  const fakeUnits = {
+    db,
+    "@user.service.getUser": (id: string) => ({
+      id,
+      name: "jacobo",
+      email: "asdfasdf@qfasdfasd.asdf",
+      isAdmin: true,
+    }),
+  };
+
+  const addPost = mockUnit(addPostFactory, fakeUnits, "@post.service");
+  const getPost = mockUnit(getPostFactory, fakeUnits, "@post.service");
+
+  const postId = addPost("titulo", "contenido", "11234");
+  const post = getPost(postId);
+
+  if (!post) throw new Error("Post not found");
+
+  assertEquals(post.id, postId);
+  assertEquals(post.title, "titulo");
+  assertEquals(post.content, "contenido");
+});
