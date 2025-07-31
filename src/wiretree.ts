@@ -30,7 +30,6 @@ export function plain<T>(unit: T): PlainDef<T> {
   return {
     type: plainSymbol,
     value: unit,
-    parent: undefined as undefined | string,
   } as const;
 }
 
@@ -63,7 +62,6 @@ export function factory<T>(unit: T) {
   return {
     type: factorySymbol,
     value: unit,
-    parent: undefined as undefined | string,
   } as const;
 }
 
@@ -114,8 +112,8 @@ export function createApp<Defs extends List>(defs: Defs) {
 }
 
 function createInjector<Defs extends List, P extends string>(
-  parent: string,
-): BlockInjector<BuildMap<Defs>, typeof parent> {
+  parent: P,
+): BlockInjector<BuildMap<Defs>, P> {
   type AppObj = BuildMap<Defs>;
   if (injectors.has(parent)) {
     return injectors.get(parent) as BlockInjector<AppObj, P>;
@@ -243,9 +241,9 @@ function createInjector<Defs extends List, P extends string>(
  * // ".service", ".repository", ".validator"
  * ```
  */
-export function block<D extends List, Prefix extends string>(
+export function block<L extends List, Prefix extends string>(
   name: Prefix,
-  units: D,
+  units: L,
 ) {
   return Object.fromEntries(
     Object.entries(units).map(([key, value]) => {
@@ -263,9 +261,7 @@ export function block<D extends List, Prefix extends string>(
         },
       ];
     }),
-  ) as {
-    [K in keyof D]: ParentedDefinition<Prefix, D[K]>;
-  };
+  ) as Namespaced<Prefix, L>;
 }
 
 function isPlain<T>(unit: Definition): unit is PlainDef<T> {
@@ -277,7 +273,6 @@ function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
 
 // =======
 
-type DefList = Record<string, Definition>;
 type List = Record<string, any>;
 
 interface FactoryDef<T> {
@@ -305,17 +300,15 @@ type InferUnitValue<D> =
 
 type Func = (...args: any[]) => any;
 
-interface ParentedDefinition<P extends string, D extends Definition> {
-  type: D["type"];
-  value: D["value"];
-  parent: D["parent"] extends string ? `${P}.${D["parent"]}` : P;
-}
+type Namespaced<N extends string, L extends List> = {
+  [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
+};
 
 type KeyOf<K extends string, E extends Definition> = E["parent"] extends string
   ? `${E["parent"]}.${K}`
   : K;
 
-type BuildMap<T extends Record<string, Definition>> = {
+type BuildMap<T extends List> = {
   [K in keyof T as KeyOf<Extract<K, string>, T[K]>]: InferUnitValue<T[K]>;
 };
 
