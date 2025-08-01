@@ -27,7 +27,6 @@ let mainDefs: List = {};
  *   retries: 3
  * });
  *
- *
  * const database = plain(createDatabaseConnection());
  * ```
  */
@@ -44,7 +43,7 @@ export function plain<T>(unit: T): PlainDef<T> {
  *
  * Factory units are useful for creating instances that require dependencies or
  * require some computation that only has to run once.
- * The factory function bets bound to the injector, allowing it to access other
+ * The factory function receives an injector as its parameter, allowing it to access other
  * units during instantiation.
  *
  * @template T - The type returned by the factory function
@@ -55,8 +54,8 @@ export function plain<T>(unit: T): PlainDef<T> {
  *
  * @example
  * ```ts
- * const httpClient = factory((this: Injector) => {
- *   const config = this("config");
+ * const httpClient = factory(function(injector) {
+ *   const config = injector("config");
  *   return new HttpClient(config.apiUrl);
  * });
  *
@@ -106,13 +105,15 @@ export function getInjector<L extends List>() {
  */
 export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
-  const appInjector = createInjector<Defs, "">("");
+  injectors = new Map();
+  mainCache = {};
+  const appInjector = createInjector<Defs, "">();
   injectors.set("", appInjector as BulkInjector);
   return appInjector;
 }
 
 function createInjector<Defs extends List, P extends string>(
-  parent: P,
+  parent = "" as P,
 ): BlockInjector<BuildMap<Defs>, P> {
   type AppObj = BuildMap<Defs>;
   if (injectors.has(parent)) {
@@ -246,19 +247,7 @@ export function block<L extends List, Prefix extends string>(
 ) {
   return Object.fromEntries(
     Object.entries(units).map(([key, value]) => {
-      const def = isFactory(value)
-        ? value
-        : isPlain(value)
-          ? value
-          : plain(value);
-
-      return [
-        `${name}.${key}`,
-        {
-          type: def.type,
-          value: def.value,
-        },
-      ];
+      return [`${name}.${key}`, value];
     }),
   ) as Namespaced<Prefix, L>;
 }
@@ -306,16 +295,13 @@ interface PlainDef<T> {
   parent?: string;
 }
 
-type Definition = FactoryDef<any> | PlainDef<any>;
+type Definition = FactoryDef<unknown> | PlainDef<unknown>;
 
 type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
-type InferUnitValue<D> =
-  D extends FactoryDef<infer T>
-    ? T //
-    : D extends PlainDef<infer V>
-      ? V
-      : D;
+type InferUnitValue<D> = D extends FactoryDef<infer T> ? T //
+  : D extends PlainDef<infer V> ? V
+  : D;
 
 type Func = (...args: any[]) => any;
 
@@ -341,10 +327,7 @@ type BlockInjector<L extends List, P extends string> = <
   K extends BlockKeys<L, P>,
 >(
   key: K,
-) => K extends keyof L
-  ? L[K]
-  : K extends `.${string}`
-    ? `${P}${K}` extends keyof L
-      ? L[`${P}${K}`]
-      : never
-    : never;
+) => K extends keyof L ? L[K]
+  : K extends `.${string}` ? `${P}${K}` extends keyof L ? L[`${P}${K}`]
+    : never
+  : never;
