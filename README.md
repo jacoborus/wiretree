@@ -27,21 +27,21 @@ npm install wiretree
 ## 🚀 Quick Start
 
 ```ts
-import { createApp } from "wiretree";
+import { createApp, plain } from "wiretree";
 
 // Define your units
 const defs = {
   config: plain({ apiUrl: "https://api.example.com" }),
-  logger: function (message: string) {
+  logger: plain((message: string) => {
     console.log(`[LOG] ${message}`);
   }),
   ...userService, // Import from other modules
 };
 
+export type Defs = typeof defs;
+
 // Create your application
 const app = createApp(defs);
-
-type Defs = typeof defs;
 
 // Use your dependencies
 const config = app("config");
@@ -53,7 +53,7 @@ log("Application started!");
 
 ### Unit Types
 
-Wiretree provides three types of unit definitions:
+Wiretree provides two types of unit definitions:
 
 #### `plain` - Static Values
 
@@ -76,46 +76,57 @@ Create instances on-demand with access to other dependencies. Results are
 cached.
 
 ```ts
-const getPrice = factory(function (this: Injector) {
-  const { fee } = this("config");
-  return (p: number) => p + config.fee;
+const httpClient = factory(function(injector) {
+  const config = injector("config");
+  return new HttpClient(config.apiUrl);
 });
 
 const cache = factory(() => new Map());
 ```
 
+### Using Services with getInjector
+
+Instead of bound functions, use `getInjector` to access dependencies:
+
+```ts
+// user/userService.ts
+import { getInjector } from "wiretree";
+import type { Defs } from "../app.ts";
+
+const inj = getInjector<Defs>()("@user.service");
+
+export function getUser(id: string) {
+  const db = inj("db");
+  return db.users.find((user) => user.id === id);
+}
+
+export function addUser(name: string, email: string) {
+  // Access other units in the same block with dot notation
+  const getUserByEmail = inj(".getUserByEmail");
+  
+  if (getUserByEmail(email)) {
+    throw new Error("User already exists");
+  }
+
+  const db = inj("db");
+  const user = { id: crypto.randomUUID(), name, email };
+  db.users.push(user);
+  return user.id;
+}
+```
 
 ### Blocks and Namespaces
 
 Organize related units using `block` to create hierarchical namespaces:
 
 ```ts
-// user/userService.ts
-export const userService = block("@user", {
-  getById: bound(getUser),
-  getByEmail: bound(getUserByEmail),
-  add: bound(addUser),
-  list: bound(getUsers),
+// user/userMod.ts
+import { block } from "wiretree";
+import * as userService from "./userService.ts";
+
+export default block("@user", {
+  ...block("service", userService),
 });
-
-function getUser(this: InjectFrom<Defs, "@user">, id: string) {
-  const db = this("db");
-  return db.users.find((user) => user.id === id);
-}
-
-function addUser(this: InjectFrom<Defs, "@user">, name: string, email: string) {
-  // Access other units in the same block with dot notation
-  const getByEmail = this(".getByEmail");
-
-  if (getByEmail(email)) {
-    throw new Error("User already exists");
-  }
-
-  const db = this("db");
-  const user = { id: crypto.randomUUID(), name, email };
-  db.users.push(user);
-  return user.id;
-}
 ```
 
 ### Dependency Resolution
@@ -124,18 +135,16 @@ Wiretree supports multiple resolution patterns:
 
 ```ts
 // Absolute resolution - access any unit by full path
-const user = app("@user.getById");
+const user = app("@user.service.getUser");
 
 // Relative resolution - access units within the same block
-function someUserFunction(this: InjectFrom<Defs, "@user">) {
-  const getByEmail = this(".getByEmail"); // Resolves to @user.getByEmail
-  const db = this("db"); // Resolves to root-level db
-}
+const inj = getInjector<Defs>()("@user.service");
+const getUserByEmail = inj(".getUserByEmail"); // Resolves to @user.service.getUserByEmail
+const db = inj("db"); // Resolves to root-level db
 
 // Cross-block resolution
-function postFunction(this: InjectFrom<Defs, "@post">) {
-  const getUser = this("@user.getById"); // Access user block from post block
-}
+const inj2 = getInjector<Defs>()("@post.service");
+const getUser = inj2("@user.service.getUser"); // Access user service from post service
 ```
 
 ## 🎯 Complete Example
@@ -164,103 +173,106 @@ export const db = {
 };
 
 // user/userService.ts
-import { block, bound, type InjectFrom } from "wiretree";
+import { getInjector } from "wiretree";
 import type { Defs } from "../app.ts";
 
-type I = InjectFrom<Defs, "@user">;
+const inj = getInjector<Defs>()("@user.service");
 
-export const userService = block("@user", {
-  getById: bound(getUser),
-  getByEmail: bound(getUserByEmail),
-  add: bound(addUser),
-  list: bound(getUsers),
-});
-
-function getUser(this: I, id: string) {
-  const db = this("db");
+export function getUser(id: string) {
+  const db = inj("db");
   return db.users.find((user) => user.id === id);
 }
 
-function getUserByEmail(this: I, email: string) {
-  const db = this("db");
+export function getUserByEmail(email: string) {
+  const db = inj("db");
   return db.users.find((user) => user.email === email);
 }
 
-function addUser(this: I, name: string, email: string, isAdmin = false) {
-  const getByEmail = this(".getByEmail");
-  const existingUser = getByEmail(email);
+export function addUser(name: string, email: string, isAdmin = false) {
+  const getUserByEmail = inj(".getUserByEmail");
+  const existingUser = getUserByEmail(email);
 
   if (existingUser) {
     throw new Error(`User with email ${email} already exists`);
   }
 
   const user = { id: crypto.randomUUID(), name, email, isAdmin };
-  this("db").users.push(user);
+  inj("db").users.push(user);
   return user.id;
 }
 
-function getUsers(this: I) {
-  return this("db").users;
+export function getUsers() {
+  return inj("db").users;
 }
 
 // post/postService.ts
-import { block, bound, type InjectFrom } from "wiretree";
+import { getInjector } from "wiretree";
 import type { Defs } from "../app.ts";
 
-type I = InjectFrom<Defs, "@post">;
+const inj = getInjector<Defs>()("@post.service");
 
-export const postService = block("@post", {
-  add: bound(addPost),
-  getById: bound(getPost),
-  list: bound(getPosts),
-});
-
-function addPost(this: I, title: string, content: string, userId: string) {
-  const getUser = this("@user.getById");
+export function addPost(title: string, content: string, userId: string) {
+  const getUser = inj("@user.service.getUser");
   const user = getUser(userId);
 
   if (!user) {
     throw new Error(`User with id ${userId} does not exist`);
   }
 
-  const db = this("db");
+  const db = inj("db");
   const post = { id: crypto.randomUUID(), title, content, userId };
   db.posts.push(post);
   return post.id;
 }
 
-function getPost(this: I, id: string) {
-  const db = this("db");
+export function getPost(id: string) {
+  const db = inj("db");
   return db.posts.find((post) => post.id === id);
 }
 
-function getPosts(this: I) {
-  return this("db").posts;
+export function getPosts() {
+  return inj("db").posts;
 }
+
+// user/userMod.ts
+import { block } from "wiretree";
+import * as userService from "./userService.ts";
+
+export default block("@user", {
+  ...block("service", userService),
+});
+
+// post/postMod.ts
+import { block } from "wiretree";
+import * as postService from "./postService.ts";
+
+export default block("@post", {
+  ...block("service", postService),
+});
 
 // app.ts
 import { createApp, plain } from "wiretree";
 import { db } from "./db.ts";
-import { userService } from "./user/userService.ts";
-import { postService } from "./post/postService.ts";
+import userMod from "./user/userMod.ts";
+import postMod from "./post/postMod.ts";
 
 const defs = {
   db: plain(db),
-  ...userService,
-  ...postService,
+  ...userMod,
+  ...postMod,
 };
 
 export type Defs = typeof defs;
 export const app = createApp(defs);
 
 // Usage
-const addUser = app("@user.add");
+const addUser = app("@user.service.addUser");
 const userId = addUser("John Doe", "john@example.com");
 
-const addPost = app("@post.add");
+const addPost = app("@post.service.addPost");
 const postId = addPost("Hello World", "This is my first post!", userId);
 
-const posts = app("@post.list")();
+const posts = app("@post.service.getPosts")();
 console.log(posts); // [{ id: "...", title: "Hello World", ... }]
 
 ```
@@ -271,38 +283,40 @@ console.log(posts); // [{ id: "...", title: "Hello World", ... }]
 Wiretree includes powerful testing utilities for isolated unit testing:
 
 ```ts
-import { bindThis, getFakeInjector } from "wiretree/testing";
-import { addUser, getUsers } from "./userService.ts";
+import { assertEquals } from "@std/assert";
+import { mockUnit } from "wiretree";
+import type { User, Post } from "../db.ts";
+import {
+  addUser as addUserFactory,
+  getUsers as getUsersFactory,
+} from "./userService.ts";
 
 Deno.test("user service - add user", () => {
-  const db = { users: [], posts: [] };
+  const db = { users: [] as User[], posts: [] as Post[] };
 
-  // Create a fake injector with mock dependencies
-  const injector = getFakeInjector({
+  const fakeUnits = {
     db,
-    ".getByEmail": (email: string) =>
-      db.users.find((user) => user.email === email),
-  });
+    "@user.service.getUserByEmail": (email: string) => {
+      return db.users.find((user) => user.email === email);
+    },
+  };
 
-  // Bind functions to the fake injector
-  const boundAddUser = bindThis(addUser, injector);
-  const boundGetUsers = bindThis(getUsers, injector);
+  const getUsers = mockUnit(getUsersFactory, fakeUnits, "@user.service");
+  let users = getUsers();
+  assertEquals(users.length, 0);
 
-  // Test the functionality
-  assertEquals(boundGetUsers().length, 0);
+  const addUser = mockUnit(addUserFactory, fakeUnits, "@user.service");
+  addUser("John", "john@example.com", true);
 
-  const userId = boundAddUser("John", "john@example.com", true);
-  assertEquals(boundGetUsers().length, 1);
-  assertEquals(boundGetUsers()[0].name, "John");
+  users = getUsers();
+  assertEquals(users.length, 1);
+  assertEquals(users[0].name, "John");
 });
 ```
 
 ### Testing Utilities
 
-- **`getFakeInjector(deps)`**: Creates a mock injector with predefined
-  dependencies
-- **`bindThis(fn, context)`**: Binds a function to a specific context for
-  testing
+- **`mockUnit(fn, fakeUnits, namespace)`**: Mocks a function with fake dependencies in a specific namespace context
 
 
 
