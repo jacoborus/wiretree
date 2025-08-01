@@ -5,8 +5,11 @@ import { createApp, plain } from "../../src/wiretree.ts";
 
 const defs = {
   db: plain(db),
-  valor: plain(5),
-  test: plain(() => "testtttt"),
+  valor: 5,
+  printValor: () => {
+    console.log(app("valor"));
+  },
+  test: () => "testtttt",
   ...userMod,
   ...postMod,
 };
@@ -16,6 +19,7 @@ export type Defs = typeof defs;
 export const app = createApp(defs);
 
 console.log(app("valor"));
+app("printValor")();
 console.log(app("test")());
 
 const addUser = app("@user.service.addUser");
