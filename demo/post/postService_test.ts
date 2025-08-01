@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { mockUnit } from "../../src/wiretree.ts";
+import { mockInjection } from "../../src/wiretree.ts";
 
 import type { User, Post } from "../db.ts";
 import {
@@ -19,8 +19,8 @@ Deno.test(function addPostTest() {
     }),
   };
 
-  const addPost = mockUnit(addPostFactory, fakeUnits, "@post.service");
-  const getPost = mockUnit(getPostFactory, fakeUnits, "@post.service");
+  const addPost = mockInjection(addPostFactory, fakeUnits, "@post.service");
+  const getPost = mockInjection(getPostFactory, fakeUnits, "@post.service");
 
   const postId = addPost("titulo", "contenido", "11234");
   const post = getPost(postId);

@@ -117,7 +117,10 @@ function createInjector<Defs extends List, P extends string>(
 ): BlockInjector<BuildMap<Defs>, P> {
   type AppObj = BuildMap<Defs>;
   if (injectors.has(parent)) {
-    return injectors.get(parent) as BlockInjector<AppObj, P>;
+    throw new Error(
+      `Injector for "${parent}" already exists. Use a different namespace or key.`,
+    );
+    // return injectors.get(parent) as BlockInjector<AppObj, P>;
   }
 
   const localCache: Partial<AppObj> = {};
@@ -252,7 +255,7 @@ export function block<L extends List, Prefix extends string>(
   ) as Namespaced<Prefix, L>;
 }
 
-export function mockUnit<D extends Func, L extends List, N extends string>(
+export function mockInjection<D extends Func, L extends List, N extends string>(
   unit: D,
   units: L,
   namespace: N,
@@ -270,6 +273,27 @@ export function mockUnit<D extends Func, L extends List, N extends string>(
     injectors = oldInjectors;
     return result;
   } as D;
+}
+
+export function mockFactory<D extends Func, L extends List, N extends string>(
+  unit: D,
+  units: L,
+  namespace: N,
+): ReturnType<D> {
+  return function () {
+    const oldMainCache = mainCache;
+    const prevNamespace = currentNamespace;
+    const oldInjectors = injectors;
+    mainCache = units;
+    injectors = new Map();
+    currentNamespace = namespace;
+    const fn = unit(injectors.get(namespace));
+    const result = fn(...arguments);
+    currentNamespace = prevNamespace;
+    mainCache = oldMainCache;
+    injectors = oldInjectors;
+    return result;
+  } as ReturnType<D>;
 }
 
 function isPlain<T>(unit: Definition): unit is PlainDef<T> {
@@ -299,9 +323,12 @@ type Definition = FactoryDef<unknown> | PlainDef<unknown>;
 
 type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
-type InferUnitValue<D> = D extends FactoryDef<infer T> ? T //
-  : D extends PlainDef<infer V> ? V
-  : D;
+type InferUnitValue<D> =
+  D extends FactoryDef<infer T>
+    ? T //
+    : D extends PlainDef<infer V>
+      ? V
+      : D;
 
 type Func = (...args: any[]) => any;
 
@@ -327,7 +354,10 @@ type BlockInjector<L extends List, P extends string> = <
   K extends BlockKeys<L, P>,
 >(
   key: K,
-) => K extends keyof L ? L[K]
-  : K extends `.${string}` ? `${P}${K}` extends keyof L ? L[`${P}${K}`]
-    : never
-  : never;
+) => K extends keyof L
+  ? L[K]
+  : K extends `.${string}`
+    ? `${P}${K}` extends keyof L
+      ? L[`${P}${K}`]
+      : never
+    : never;

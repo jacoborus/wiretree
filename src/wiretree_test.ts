@@ -4,11 +4,13 @@ import {
   factory,
   createApp,
   block,
-  mockUnit,
+  mockInjection,
+  mockFactory,
   getInjector,
 } from "./wiretree.ts";
 
 Deno.test("plain function creates value definition", () => {
+  createApp({});
   const valueDef = plain("testValue");
 
   assertEquals(valueDef.type.description, "plain");
@@ -16,6 +18,7 @@ Deno.test("plain function creates value definition", () => {
 });
 
 Deno.test("factory function creates and caches instances", () => {
+  createApp({});
   const factoryDef = factory(() => ({ key: "value" }));
 
   assertEquals(factoryDef.type.description, "factory");
@@ -24,6 +27,7 @@ Deno.test("factory function creates and caches instances", () => {
 });
 
 Deno.test("createApp resolves dependencies", () => {
+  createApp({});
   const defs = {
     key: plain("value"),
     "@nested.subKey": plain("subValue"),
@@ -36,6 +40,7 @@ Deno.test("createApp resolves dependencies", () => {
 });
 
 Deno.test("block creates namespaced definitions", () => {
+  createApp({});
   const blockInstance = block("namespace", {
     key: 5,
     key2: 6,
@@ -52,6 +57,7 @@ Deno.test("block creates namespaced definitions", () => {
 });
 
 Deno.test("error handling for missing dependencies", () => {
+  createApp({});
   const defs = {
     key: plain("value"),
   };
@@ -81,7 +87,8 @@ Deno.test("error handling for missing dependencies", () => {
   }
 });
 
-Deno.test("mockUnit", () => {
+Deno.test("mockInjection", () => {
+  createApp({});
   const fakeUnits = {
     "@test.service.getByEmail": (email: string) => {
       assertEquals(email, "email");
@@ -91,10 +98,33 @@ Deno.test("mockUnit", () => {
 
   const injector = getInjector<typeof fakeUnits>()("@test.service");
 
-  const getUser = mockUnit(
+  const getUser = mockInjection(
     function (email: string) {
       const getByEmail = injector("@test.service.getByEmail");
       return getByEmail(email);
+    },
+    fakeUnits,
+    "@test.service",
+  );
+
+  assertEquals(getUser("email").email, "email");
+});
+
+Deno.test("mockFactory", () => {
+  createApp({});
+  const fakeUnits = {
+    "@test.service.getByEmail": (email: string) => {
+      assertEquals(email, "email");
+      return { email };
+    },
+  };
+
+  const inj = getInjector<typeof fakeUnits>()("@test.service");
+
+  const getUser = mockFactory(
+    () => {
+      const getByEmail = inj("@test.service.getByEmail");
+      return (email: string) => getByEmail(email);
     },
     fakeUnits,
     "@test.service",
