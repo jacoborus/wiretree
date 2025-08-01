@@ -1,5 +1,12 @@
 import { assertEquals } from "@std/assert";
-import { plain, factory, createApp, block } from "./wiretree.ts";
+import {
+  plain,
+  factory,
+  createApp,
+  block,
+  mockUnit,
+  getInjector,
+} from "./wiretree.ts";
 
 Deno.test("plain function creates value definition", () => {
   const valueDef = plain("testValue");
@@ -30,16 +37,18 @@ Deno.test("createApp resolves dependencies", () => {
 
 Deno.test("block creates namespaced definitions", () => {
   const blockInstance = block("namespace", {
-    key: plain("value"),
+    key: 5,
+    key2: 6,
   });
 
   const blockParent = block("@parent", {
     ...blockInstance,
   });
 
-  assertEquals(blockInstance["namespace.key"].type.description, "plain");
-  assertEquals(blockInstance["namespace.key"].value, "value");
-  assertEquals(blockParent["@parent.namespace.key"].value, "value");
+  assertEquals(blockInstance["namespace.key"], 5);
+  assertEquals(blockInstance["namespace.key2"], 6);
+  assertEquals(blockParent["@parent.namespace.key"], 5);
+  assertEquals(blockParent["@parent.namespace.key2"], 6);
 });
 
 Deno.test("error handling for missing dependencies", () => {
@@ -70,4 +79,26 @@ Deno.test("error handling for missing dependencies", () => {
       assertEquals(error.message, 'Key nonexistent not found from block ""');
     }
   }
+});
+
+Deno.test("mockUnit", () => {
+  const fakeUnits = {
+    "@test.service.getByEmail": (email: string) => {
+      assertEquals(email, "email");
+      return { email };
+    },
+  };
+
+  const injector = getInjector<typeof fakeUnits>()("@test.service");
+
+  const getUser = mockUnit(
+    function (email: string) {
+      const getByEmail = injector("@test.service.getByEmail");
+      return getByEmail(email);
+    },
+    fakeUnits,
+    "@test.service",
+  );
+
+  assertEquals(getUser("email").email, "email");
 });
