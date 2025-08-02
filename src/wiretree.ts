@@ -159,18 +159,18 @@ function createInjector<Defs extends List, P extends string>(
       const value = def.value(createInjector(finalParent)) as InferUnitValue<
         Defs[K]
       >;
-      localCache[finalKey as keyof AppObj] = value;
+      localCache[key as keyof AppObj] = value;
       mainCache[finalKey as keyof AppObj] = value;
       return value;
     }
 
     if (isPlain(def)) {
-      localCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
+      localCache[key as keyof AppObj] = def.value as AppObj[keyof AppObj];
       mainCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
       return def.value as AppObj[K];
     }
 
-    localCache[finalKey as keyof AppObj] = def;
+    localCache[key as keyof AppObj] = def;
     mainCache[finalKey as keyof AppObj] = def;
     return def;
   };
