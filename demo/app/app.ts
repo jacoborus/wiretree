@@ -1,10 +1,10 @@
 import { db } from "../db.ts";
 import postMod from "../post/postMod.ts";
 import userMod from "../user/userMod.ts";
-import { createApp, plain } from "../../src/wiretree.ts";
+import { createApp } from "../../src/wiretree.ts";
 
 const defs = {
-  db: plain(db),
+  db,
   valor: 5,
   printValor: () => {
     console.log(app("valor"));

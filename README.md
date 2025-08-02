@@ -1,7 +1,7 @@
-# Wiretree
+# Wiremap
 
-**Wiretree** is a lightweight, type-safe dependency injection framework for
-TypeScript that emphasizes compositional design and hierarchical organization.
+**Wiremap** is a lightweight, type-safe dependency injection framework for
+TypeScript that favours composition over inheritance.
 Build scalable, maintainable, and testable applications with intuitive
 dependency management.
 
@@ -21,20 +21,20 @@ dependency management.
 ## 📦 Installation
 
 ```bash
-npm install wiretree
+npm install wiremap
 ```
 
 ## 🚀 Quick Start
 
 ```ts
-import { createApp, plain } from "wiretree";
+import { createApp, plain } from "wiremap";
 
 // Define your units
 const defs = {
-  config: plain({ apiUrl: "https://api.example.com" }),
-  logger: plain((message: string) => {
+  config: { apiUrl: "https://api.example.com" },
+  logger: (message: string) => {
     console.log(`[LOG] ${message}`);
-  }),
+  },
   ...userService, // Import from other modules
 };
 
@@ -53,44 +53,33 @@ log("Application started!");
 
 ### Unit Types
 
-Wiretree provides two types of unit definitions:
-
-#### `plain` - Static Values
-
-Store functions that don't require injection, constants, configuration objects,
-or pre-instantiated objects.
-
-```ts
-const config = plain({
-  apiUrl: "https://api.example.com",
-  timeout: 5000,
-  retries: 3,
-});
-
-const database = plain(new DatabaseConnection());
-```
 
 #### `factory` - Lazy Singletons
 
 Create instances on-demand with access to other dependencies. Results are
 cached.
 
+To declare a function as factory, just add the property `factory` as
+`true as const` to it
+
 ```ts
-const httpClient = factory(function(injector) {
+const httpClient = function() {
   const config = injector("config");
   return new HttpClient(config.apiUrl);
-});
+};
+httpClient.factory = true as const;
 
-const cache = factory(() => new Map());
+const cache = () => new Map()
+cache.factory = true as const;
 ```
 
 ### Using Services with getInjector
 
-Instead of bound functions, use `getInjector` to access dependencies:
+Use `getInjector` to obtain a namespaced injector:
 
 ```ts
 // user/userService.ts
-import { getInjector } from "wiretree";
+import { getInjector } from "wiremap";
 import type { Defs } from "../app.ts";
 
 const inj = getInjector<Defs>()("@user.service");
@@ -121,7 +110,7 @@ Organize related units using `block` to create hierarchical namespaces:
 
 ```ts
 // user/userMod.ts
-import { block } from "wiretree";
+import { block } from "wiremap";
 import * as userService from "./userService.ts";
 
 export default block("@user", {
@@ -131,7 +120,7 @@ export default block("@user", {
 
 ### Dependency Resolution
 
-Wiretree supports multiple resolution patterns:
+Wiremap supports multiple resolution patterns:
 
 ```ts
 // Absolute resolution - access any unit by full path
@@ -173,7 +162,7 @@ export const db = {
 };
 
 // user/userService.ts
-import { getInjector } from "wiretree";
+import { getInjector } from "wiremap";
 import type { Defs } from "../app.ts";
 
 const inj = getInjector<Defs>()("@user.service");
@@ -206,7 +195,7 @@ export function getUsers() {
 }
 
 // post/postService.ts
-import { getInjector } from "wiretree";
+import { getInjector } from "wiremap";
 import type { Defs } from "../app.ts";
 
 const inj = getInjector<Defs>()("@post.service");
@@ -235,7 +224,7 @@ export function getPosts() {
 }
 
 // user/userMod.ts
-import { block } from "wiretree";
+import { block } from "wiremap";
 import * as userService from "./userService.ts";
 
 export default block("@user", {
@@ -243,7 +232,7 @@ export default block("@user", {
 });
 
 // post/postMod.ts
-import { block } from "wiretree";
+import { block } from "wiremap";
 import * as postService from "./postService.ts";
 
 export default block("@post", {
@@ -251,7 +240,7 @@ export default block("@post", {
 });
 
 // app.ts
-import { createApp, plain } from "wiretree";
+import { createApp, plain } from "wiremap";
 import { db } from "./db.ts";
 import userMod from "./user/userMod.ts";
 import postMod from "./post/postMod.ts";
@@ -280,15 +269,15 @@ console.log(posts); // [{ id: "...", title: "Hello World", ... }]
 
 ## 🧪 Testing
 
-Wiretree includes powerful testing utilities for isolated unit testing:
+Wiremap includes powerful testing utilities for isolated unit testing:
 
 ```ts
 import { assertEquals } from "@std/assert";
-import { mockUnit } from "wiretree";
+import { mockUnit } from "wiremap";
 import type { User, Post } from "../db.ts";
 import {
-  addUser as addUserFactory,
-  getUsers as getUsersFactory,
+  addUser as addUserUnit,
+  getUsers as getUsersUnit,
 } from "./userService.ts";
 
 Deno.test("user service - add user", () => {
@@ -301,11 +290,11 @@ Deno.test("user service - add user", () => {
     },
   };
 
-  const getUsers = mockUnit(getUsersFactory, fakeUnits, "@user.service");
+  const getUsers = mockUnit(getUsersUnit, fakeUnits, "@user.service");
   let users = getUsers();
   assertEquals(users.length, 0);
 
-  const addUser = mockUnit(addUserFactory, fakeUnits, "@user.service");
+  const addUser = mockUnit(addUserUnit, fakeUnits, "@user.service");
   addUser("John", "john@example.com", true);
 
   users = getUsers();

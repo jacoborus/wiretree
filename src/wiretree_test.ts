@@ -1,7 +1,5 @@
 import { assertEquals } from "@std/assert";
 import {
-  plain,
-  factory,
   createApp,
   block,
   mockInjection,
@@ -9,28 +7,11 @@ import {
   getInjector,
 } from "./wiretree.ts";
 
-Deno.test("plain function creates value definition", () => {
-  createApp({}); // clears the previous injectors and cache
-  const valueDef = plain("testValue");
-
-  assertEquals(valueDef.type.description, "plain");
-  assertEquals(valueDef.value, "testValue");
-});
-
-Deno.test("factory function creates and caches instances", () => {
-  createApp({});
-  const factoryDef = factory(() => ({ key: "value" }));
-
-  assertEquals(factoryDef.type.description, "factory");
-  const instance = factoryDef.value();
-  assertEquals(instance.key, "value");
-});
-
 Deno.test("createApp resolves dependencies", () => {
   createApp({});
   const defs = {
-    key: plain("value"),
-    "@nested.subKey": plain("subValue"),
+    key: "value",
+    "@nested.subKey": "subValue",
   };
 
   const app = createApp(defs);
@@ -59,7 +40,7 @@ Deno.test("block creates namespaced definitions", () => {
 Deno.test("error handling for missing dependencies", () => {
   createApp({});
   const defs = {
-    key: plain("value"),
+    key: "value",
   };
 
   const app = createApp(defs);
@@ -71,7 +52,7 @@ Deno.test("error handling for missing dependencies", () => {
         throw new Error("Should have thrown an error");
       } catch (e: unknown) {
         if (e instanceof Error) {
-          assertEquals(e.message, 'Key nonexistent not found from block ""');
+          assertEquals(e.message, 'Unit nonexistent not found from block ""');
         }
       }
     } catch (e) {

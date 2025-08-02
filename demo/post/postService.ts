@@ -1,4 +1,4 @@
-import { getInjector, factory } from "../../src/wiretree.ts";
+import { getInjector } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
 const inj = getInjector<Defs>()("@post.service");
@@ -24,7 +24,8 @@ export function addPost(title: string, content: string, userId: string) {
   return id;
 }
 
-export const collection = factory(() => {
+export function collection() {
   const db = inj("db");
   return db.posts;
-});
+}
+collection.factory = true as const;

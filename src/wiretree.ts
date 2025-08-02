@@ -1,72 +1,6 @@
-const plainSymbol = Symbol("plain");
-const factorySymbol = Symbol("factory");
-
 let mainDefs: List = {};
 let mainCache: List = {};
 let takenInjectors = new Set<string>();
-
-/**
- * Creates a unit definition that stores a static value.
- *
- * Value definitions are perfect for functions that do not require injection,
- * or any singleton-like value that should be shared across the application.
- * The value is resolved once and cached for all subsequent requests.
- *
- * @template T - The type of the value to be stored
- *
- * @param unit - The static value or object to be injected
- *
- * @returns A value definition object
- *
- * @example
- * ```ts
- * const config = plain({
- *   apiUrl: "https://api.example.com",
- *   timeout: 5000,
- *   retries: 3
- * });
- *
- * const database = plain(createDatabaseConnection());
- * ```
- */
-export function plain<T>(unit: T): PlainDef<T> {
-  return {
-    type: plainSymbol,
-    value: unit,
-  } as const;
-}
-
-/**
- * Creates a unit definition that will generate a new instance of the unit.
- * It will be cached and reused.
- *
- * Factory units are useful for creating instances that require dependencies or
- * require some computation that only has to run once.
- * The factory function receives an injector as its parameter, allowing it to access other
- * units during instantiation.
- *
- * @template T - The type returned by the factory function
- *
- * @param unit - A factory function that creates instances of type T
- *
- * @returns A factory definition object
- *
- * @example
- * ```ts
- * const httpClient = factory(function(injector) {
- *   const config = injector("config");
- *   return new HttpClient(config.apiUrl);
- * });
- *
- * const logger = factory(() => new Logger());
- * ```
- */
-export function factory<T>(unit: T) {
-  return {
-    type: factorySymbol,
-    value: unit,
-  } as const;
-}
 
 export function getInjector<L extends List>() {
   return function <N extends string>(
@@ -75,6 +9,7 @@ export function getInjector<L extends List>() {
     return createInjector(namespace);
   };
 }
+
 /**
  * Creates the main application injector that manages all units and their resolution.
  *
@@ -142,28 +77,15 @@ function createInjector<Defs extends List, P extends string>(
       );
     }
 
-    const finalParent = finalKey.includes(".")
-      ? finalKey.split(".").slice(0, -1).join(".")
-      : parent;
-
     if (isFactory(def)) {
-      const value = def.value(createInjector(finalParent)) as InferUnitValue<
-        Defs[K]
-      >;
-      localCache[key as keyof AppObj] = value;
-      mainCache[finalKey as keyof AppObj] = value;
+      const value = def() as AppObj[K];
+      localCache[key] = value;
+      mainCache[finalKey] = value;
       return value;
     }
 
-    if (isPlain(def)) {
-      const value = def.value as AppObj[K];
-      localCache[key as keyof AppObj] = value;
-      mainCache[finalKey as keyof AppObj] = value;
-      return value;
-    }
-
-    localCache[key as keyof AppObj] = def;
-    mainCache[finalKey as keyof AppObj] = def;
+    localCache[key] = def;
+    mainCache[finalKey] = def;
     return def;
   } as BlockInjector<AppObj, P>;
 }
@@ -237,37 +159,26 @@ export function mockFactory<D extends Func, L extends List>(
   } as ReturnType<D>;
 }
 
-function isPlain<T>(unit: Definition): unit is PlainDef<T> {
-  return unit.type === plainSymbol;
+function isFactory<T>(unit: () => T): unit is Factory<T> {
+  return (
+    typeof unit === "function" && "factory" in unit && unit.factory === true
+  );
 }
-function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
-  return unit.type === factorySymbol;
-}
+type IsFactory<F> = F extends { (): any; factory: true } ? true : false;
 
 // =======
 
 type List = Record<string, any>;
 
-interface FactoryDef<T> {
-  type: typeof factorySymbol;
-  value: (...args: any[]) => T;
-  parent?: string;
+interface Factory<T> {
+  (...args: any[]): T;
+  factory: true;
 }
-
-interface PlainDef<T> {
-  type: typeof plainSymbol;
-  value: T;
-  parent?: string;
-}
-
-type Definition = FactoryDef<unknown> | PlainDef<unknown>;
 
 type InferUnitValue<D> =
-  D extends FactoryDef<infer T>
+  D extends Factory<infer T>
     ? T //
-    : D extends PlainDef<infer V>
-      ? V
-      : D;
+    : D;
 
 type Func = (...args: any[]) => any;
 
@@ -275,12 +186,8 @@ type Namespaced<N extends string, L extends List> = {
   [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
 };
 
-type KeyOf<K extends string, E extends Definition> = E["parent"] extends string
-  ? `${E["parent"]}.${K}`
-  : K;
-
 type BuildMap<T extends List> = {
-  [K in keyof T as KeyOf<Extract<K, string>, T[K]>]: InferUnitValue<T[K]>;
+  [K in keyof T as Extract<K, string>]: InferUnitValue<T[K]>;
 };
 
 type PrefixedKeys<L extends List, P extends string> = {
