@@ -106,7 +106,6 @@ export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
   takenInjectors = new Set<string>();
-  takenInjectors.add("");
   const appInjector = createInjector<Defs, "">();
   return appInjector;
 }

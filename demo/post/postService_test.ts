@@ -1,13 +1,11 @@
 import { assertEquals } from "@std/assert";
-import { mockInjection } from "../../src/wiretree.ts";
+import { mockInjection, createApp } from "../../src/wiretree.ts";
 
 import type { User, Post } from "../db.ts";
-import {
-  addPost as addPostFactory,
-  getPost as getPostFactory,
-} from "./postService.ts";
+import { addPost, getPost } from "./postService.ts";
 
 Deno.test(function addPostTest() {
+  createApp({});
   const db = { user: [] as User[], posts: [] as Post[] };
   const fakeUnits = {
     db,
@@ -19,11 +17,11 @@ Deno.test(function addPostTest() {
     }),
   };
 
-  const addPost = mockInjection(addPostFactory, fakeUnits);
-  const getPost = mockInjection(getPostFactory, fakeUnits);
+  const addPostInstance = mockInjection(addPost, fakeUnits);
+  const getPostInstance = mockInjection(getPost, fakeUnits);
 
-  const postId = addPost("titulo", "contenido", "11234");
-  const post = getPost(postId);
+  const postId = addPostInstance("titulo", "contenido", "11234");
+  const post = getPostInstance(postId);
 
   if (!post) throw new Error("Post not found");
 
