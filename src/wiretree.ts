@@ -106,8 +106,7 @@ export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
   takenInjectors = new Set<string>();
-  const appInjector = createInjector<Defs, "">();
-  return appInjector;
+  return createInjector<Defs, "">();
 }
 
 function createInjector<Defs extends List, P extends string>(
@@ -119,22 +118,18 @@ function createInjector<Defs extends List, P extends string>(
 
   type AppObj = BuildMap<Defs>;
   const localCache: Partial<AppObj> = {};
+  takenInjectors.add(parent);
 
-  const injector = function <K extends keyof AppObj>(key: K): AppObj[K] {
+  return function <K extends keyof AppObj>(key: K): AppObj[K] {
     if (key in localCache) {
       return localCache[key] as AppObj[K];
     }
 
-    if (typeof key !== "string") {
-      throw new Error(`Key must be a string, received: ${typeof key}`);
-    }
-
-    const finalKey = key.startsWith(".") ? `${parent}${String(key)}` : key;
+    const k = String(key);
+    const finalKey = k.startsWith(".") ? `${parent}${k}` : k;
 
     if (finalKey in mainCache) {
-      const unit = mainCache[
-        finalKey as keyof typeof mainCache
-      ] as InferUnitValue<Defs[K]>;
+      const unit = mainCache[finalKey];
       localCache[key] = unit;
       return unit;
     }
@@ -143,7 +138,7 @@ function createInjector<Defs extends List, P extends string>(
 
     if (!def) {
       throw new Error(
-        `Key ${String(finalKey)} not found from block "${parent}"`,
+        `Unit ${String(finalKey)} not found from block "${parent}"`,
       );
     }
 
@@ -161,19 +156,16 @@ function createInjector<Defs extends List, P extends string>(
     }
 
     if (isPlain(def)) {
-      localCache[key as keyof AppObj] = def.value as AppObj[keyof AppObj];
-      mainCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
-      return def.value as AppObj[K];
+      const value = def.value as AppObj[K];
+      localCache[key as keyof AppObj] = value;
+      mainCache[finalKey as keyof AppObj] = value;
+      return value;
     }
 
     localCache[key as keyof AppObj] = def;
     mainCache[finalKey as keyof AppObj] = def;
     return def;
-  };
-
-  takenInjectors.add(parent);
-
-  return injector as BlockInjector<AppObj, P>;
+  } as BlockInjector<AppObj, P>;
 }
 
 /**
@@ -209,12 +201,14 @@ function createInjector<Defs extends List, P extends string>(
 export function block<L extends List, Prefix extends string>(
   name: Prefix,
   units: L,
-) {
-  return Object.fromEntries(
-    Object.entries(units).map(([key, value]) => {
-      return [`${name}.${key}`, value];
-    }),
-  ) as Namespaced<Prefix, L>;
+): Namespaced<Prefix, L> {
+  const result: Record<string, unknown> = {};
+  for (const key in units) {
+    if (Object.prototype.hasOwnProperty.call(units, key)) {
+      result[`${name}.${key}`] = units[key];
+    }
+  }
+  return result as Namespaced<Prefix, L>;
 }
 
 export function mockInjection<D extends Func, L extends List>(
