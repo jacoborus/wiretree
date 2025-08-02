@@ -1,9 +1,9 @@
 const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
 
-let mainCache: List = {};
-let injectors = new Map<string, BulkInjector>();
 let mainDefs: List = {};
+let mainCache: List = {};
+let takenInjectors = new Set<string>();
 
 /**
  * Creates a unit definition that stores a static value.
@@ -104,24 +104,21 @@ export function getInjector<L extends List>() {
  */
 export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
-  injectors = new Map();
   mainCache = {};
+  takenInjectors = new Set<string>();
+  takenInjectors.add("");
   const appInjector = createInjector<Defs, "">();
-  injectors.set("", appInjector as BulkInjector);
   return appInjector;
 }
 
 function createInjector<Defs extends List, P extends string>(
   parent = "" as P,
 ): BlockInjector<BuildMap<Defs>, P> {
-  type AppObj = BuildMap<Defs>;
-  if (injectors.has(parent)) {
-    throw new Error(
-      `Injector for "${parent}" already exists. Use a different namespace or key.`,
-    );
-    // return injectors.get(parent) as BlockInjector<AppObj, P>;
+  if (takenInjectors.has(parent)) {
+    throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
+  type AppObj = BuildMap<Defs>;
   const localCache: Partial<AppObj> = {};
 
   const injector = function <K extends keyof AppObj>(key: K): AppObj[K] {
@@ -175,7 +172,7 @@ function createInjector<Defs extends List, P extends string>(
     return def;
   };
 
-  injectors.set(parent, injector as BulkInjector);
+  takenInjectors.add(parent);
 
   return injector as BlockInjector<AppObj, P>;
 }
@@ -271,8 +268,6 @@ interface PlainDef<T> {
 }
 
 type Definition = FactoryDef<unknown> | PlainDef<unknown>;
-
-type BulkInjector = <K extends keyof U, U extends List>(key: K) => U[K];
 
 type InferUnitValue<D> =
   D extends FactoryDef<infer T>
