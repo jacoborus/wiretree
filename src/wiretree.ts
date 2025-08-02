@@ -227,12 +227,9 @@ export function mockInjection<D extends Func, L extends List>(
 ): D {
   return function () {
     const oldMainCache = mainCache;
-    const oldInjectors = injectors;
     mainCache = units;
-    injectors = new Map();
     const result = unit(...arguments);
     mainCache = oldMainCache;
-    injectors = oldInjectors;
     return result;
   } as D;
 }
@@ -243,14 +240,9 @@ export function mockFactory<D extends Func, L extends List>(
 ): ReturnType<D> {
   return function () {
     const oldMainCache = mainCache;
-    const oldInjectors = injectors;
     mainCache = units;
-    injectors = new Map();
-
-    const fn = unit(getFakeInjector(units));
-    const result = fn(...arguments);
+    const result = unit()(...arguments);
     mainCache = oldMainCache;
-    injectors = oldInjectors;
     return result;
   } as ReturnType<D>;
 }
@@ -260,17 +252,6 @@ function isPlain<T>(unit: Definition): unit is PlainDef<T> {
 }
 function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
   return unit.type === factorySymbol;
-}
-
-function getFakeInjector<L extends Record<string, unknown>>(
-  list: L,
-): <K extends keyof L>(key: K) => L[K] {
-  return function <K extends keyof L>(key: K) {
-    if (key in list) {
-      return list[key];
-    }
-    throw new Error(`Unit "${String(key)}" not found in fake block`);
-  };
 }
 
 // =======
