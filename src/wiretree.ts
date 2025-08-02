@@ -1,7 +1,6 @@
 const plainSymbol = Symbol("plain");
 const factorySymbol = Symbol("factory");
 
-let currentNamespace = "";
 let mainCache: List = {};
 let injectors = new Map<string, BulkInjector>();
 let mainDefs: List = {};
@@ -152,12 +151,6 @@ function createInjector<Defs extends List, P extends string>(
       );
     }
 
-    if (isPlain(def)) {
-      const value = def.value as InferUnitValue<Defs[K]>;
-      mainCache[finalKey as keyof AppObj] = value;
-      return value;
-    }
-
     const finalParent = finalKey.includes(".")
       ? finalKey.split(".").slice(0, -1).join(".")
       : parent;
@@ -172,40 +165,13 @@ function createInjector<Defs extends List, P extends string>(
     }
 
     if (isPlain(def)) {
-      if (typeof def.value === "function") {
-        const f = function () {
-          const fun = def.value as Func;
-          const prevNamespace = currentNamespace;
-          currentNamespace = finalParent;
-          const result = fun(...arguments);
-          currentNamespace = prevNamespace;
-          return result;
-        } as AppObj[keyof AppObj];
-
-        localCache[finalKey as keyof AppObj] = f;
-        mainCache[finalKey as keyof AppObj] = f;
-        return f as AppObj[K];
-      }
-
       localCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
       mainCache[finalKey as keyof AppObj] = def.value as AppObj[keyof AppObj];
       return def.value as AppObj[K];
     }
 
-    if (typeof def.value === "function") {
-      const f = function () {
-        const prevNamespace = currentNamespace;
-        currentNamespace = finalParent;
-        const result = def.value(...arguments);
-        currentNamespace = prevNamespace;
-        return result;
-      } as AppObj[keyof AppObj];
-
-      localCache[finalKey as keyof AppObj] = f;
-      mainCache[finalKey as keyof AppObj] = f;
-      return f as AppObj[K];
-    }
-
+    localCache[finalKey as keyof AppObj] = def;
+    mainCache[finalKey as keyof AppObj] = def;
     return def;
   };
 
@@ -255,41 +221,34 @@ export function block<L extends List, Prefix extends string>(
   ) as Namespaced<Prefix, L>;
 }
 
-export function mockInjection<D extends Func, L extends List, N extends string>(
+export function mockInjection<D extends Func, L extends List>(
   unit: D,
   units: L,
-  namespace: N,
 ): D {
   return function () {
     const oldMainCache = mainCache;
-    const prevNamespace = currentNamespace;
     const oldInjectors = injectors;
     mainCache = units;
     injectors = new Map();
-    currentNamespace = namespace;
     const result = unit(...arguments);
-    currentNamespace = prevNamespace;
     mainCache = oldMainCache;
     injectors = oldInjectors;
     return result;
   } as D;
 }
 
-export function mockFactory<D extends Func, L extends List, N extends string>(
+export function mockFactory<D extends Func, L extends List>(
   unit: D,
   units: L,
-  namespace: N,
 ): ReturnType<D> {
   return function () {
     const oldMainCache = mainCache;
-    const prevNamespace = currentNamespace;
     const oldInjectors = injectors;
     mainCache = units;
     injectors = new Map();
-    currentNamespace = namespace;
-    const fn = unit(injectors.get(namespace));
+
+    const fn = unit(getFakeInjector(units));
     const result = fn(...arguments);
-    currentNamespace = prevNamespace;
     mainCache = oldMainCache;
     injectors = oldInjectors;
     return result;
@@ -301,6 +260,17 @@ function isPlain<T>(unit: Definition): unit is PlainDef<T> {
 }
 function isFactory<T extends Func>(unit: Definition): unit is FactoryDef<T> {
   return unit.type === factorySymbol;
+}
+
+function getFakeInjector<L extends Record<string, unknown>>(
+  list: L,
+): <K extends keyof L>(key: K) => L[K] {
+  return function <K extends keyof L>(key: K) {
+    if (key in list) {
+      return list[key];
+    }
+    throw new Error(`Unit "${String(key)}" not found in fake block`);
+  };
 }
 
 // =======

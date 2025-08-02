@@ -19,8 +19,8 @@ Deno.test(function addPostTest() {
     }),
   };
 
-  const addPost = mockInjection(addPostFactory, fakeUnits, "@post.service");
-  const getPost = mockInjection(getPostFactory, fakeUnits, "@post.service");
+  const addPost = mockInjection(addPostFactory, fakeUnits);
+  const getPost = mockInjection(getPostFactory, fakeUnits);
 
   const postId = addPost("titulo", "contenido", "11234");
   const post = getPost(postId);

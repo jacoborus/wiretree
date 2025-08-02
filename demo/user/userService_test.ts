@@ -17,11 +17,11 @@ Deno.test(function addUsertTest() {
     },
   };
 
-  const getUsers = mockInjection(getUsersFactory, fakeUnits, "@user.service");
+  const getUsers = mockInjection(getUsersFactory, fakeUnits);
   let users = getUsers();
   assertEquals(users.length, 0);
 
-  const addUser = mockInjection(addUserFactory, fakeUnits, "@user.service");
+  const addUser = mockInjection(addUserFactory, fakeUnits);
   addUser("john", "john@example.com", true);
 
   users = getUsers();

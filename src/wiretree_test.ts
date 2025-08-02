@@ -10,7 +10,7 @@ import {
 } from "./wiretree.ts";
 
 Deno.test("plain function creates value definition", () => {
-  createApp({});
+  createApp({}); // clears the previous injectors and cache
   const valueDef = plain("testValue");
 
   assertEquals(valueDef.type.description, "plain");
@@ -98,14 +98,10 @@ Deno.test("mockInjection", () => {
 
   const injector = getInjector<typeof fakeUnits>()("@test.service");
 
-  const getUser = mockInjection(
-    function (email: string) {
-      const getByEmail = injector("@test.service.getByEmail");
-      return getByEmail(email);
-    },
-    fakeUnits,
-    "@test.service",
-  );
+  const getUser = mockInjection((email: string) => {
+    const getByEmail = injector("@test.service.getByEmail");
+    return getByEmail(email);
+  }, fakeUnits);
 
   assertEquals(getUser("email").email, "email");
 });
@@ -121,14 +117,10 @@ Deno.test("mockFactory", () => {
 
   const inj = getInjector<typeof fakeUnits>()("@test.service");
 
-  const getUser = mockFactory(
-    () => {
-      const getByEmail = inj("@test.service.getByEmail");
-      return (email: string) => getByEmail(email);
-    },
-    fakeUnits,
-    "@test.service",
-  );
+  const getUser = mockFactory(() => {
+    const getByEmail = inj("@test.service.getByEmail");
+    return (email: string) => getByEmail(email);
+  }, fakeUnits);
 
   assertEquals(getUser("email").email, "email");
 });
