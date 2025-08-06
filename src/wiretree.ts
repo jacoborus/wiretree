@@ -1,12 +1,14 @@
 let mainDefs: List = {};
 let mainCache: List = {};
 let takenInjectors = new Set<string>();
+let publicKeys: string[] = [];
+let proxiesCache: Record<string, any> = {};
 
 export function getInjector<L extends List>() {
   return function <N extends string>(
-    namespace: N,
+    namespace = "#" as N,
   ): BlockInjector<BuildMap<L>, N> {
-    return createInjector(namespace);
+    return createInjector<L, N>(namespace);
   };
 }
 
@@ -40,54 +42,112 @@ export function getInjector<L extends List>() {
 export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
+  proxiesCache = {};
+  publicKeys = getPublicKeys(defs);
   takenInjectors = new Set<string>();
-  return createInjector<Defs, "">();
+  return createInjector<Defs, "#">("#");
 }
 
 function createInjector<Defs extends List, P extends string>(
-  parent = "" as P,
+  parent = "#" as P,
 ): BlockInjector<BuildMap<Defs>, P> {
   if (takenInjectors.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
   type AppObj = BuildMap<Defs>;
-  const localCache: Partial<AppObj> = {};
+  const localCache: Record<string, any> = {};
   takenInjectors.add(parent);
 
-  return function <K extends keyof AppObj>(key: K): AppObj[K] {
+  return function <K extends "." | "#" | BlockKeys<AppObj>>(
+    key = "#" as K,
+  ): BlockProxy<AppObj, P, K> {
+    type ThisProxy = BlockProxy<AppObj, P, K>;
     if (key in localCache) {
-      return localCache[key] as AppObj[K];
+      return localCache[key] as ThisProxy;
     }
 
     const k = String(key);
-    const finalKey = k.startsWith(".") ? `${parent}${k}` : k;
-
-    if (finalKey in mainCache) {
-      const unit = mainCache[finalKey];
-      localCache[key] = unit;
-      return unit;
+    if (k === ".") {
+      const proxy = createBlockProxy(parent) as unknown as ThisProxy;
+      localCache["."] = proxy;
+      proxiesCache[parent] = proxy;
+      return proxy;
     }
 
-    const def = mainDefs[finalKey];
-
-    if (!def) {
-      throw new Error(
-        `Unit ${String(finalKey)} not found from block "${parent}"`,
-      );
+    if (k === "#") {
+      const proxy = createBlockProxy("#") as ThisProxy;
+      localCache["#"] = proxy;
+      proxiesCache["#"] = proxy;
+      return proxy;
     }
 
-    if (isFactory(def)) {
-      const value = def() as AppObj[K];
-      localCache[key] = value;
-      mainCache[finalKey] = value;
-      return value;
+    if (publicKeys.includes(k)) {
+      const proxy = createBlockProxy(k) as ThisProxy;
+      localCache[k] = proxy;
+      proxiesCache[k] = proxy;
+      return proxy;
     }
 
-    localCache[key] = def;
-    mainCache[finalKey] = def;
-    return def;
-  } as BlockInjector<AppObj, P>;
+    throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
+  };
+}
+
+function getPublicKeys<L extends List>(defs: L): BlockKeys<L>[] {
+  return Object.keys(defs)
+    .filter((key) => key.split(".").length > 1)
+    .map((key) => {
+      const parts = key.split(".");
+      return parts
+        .slice(0, parts.length - 1)
+        .join(".") as BlockKeys<L>[][number];
+    });
+}
+
+function createBlockProxy<L extends List, P extends string, N extends string>(
+  namespace: N,
+): BlockProxy<L, P, N> {
+  const cachedblock: Record<string, any> = {};
+  const unitKeys =
+    namespace === "#"
+      ? Object.keys(mainDefs).filter((key) => key.split(".").length === 1)
+      : Object.keys(mainDefs).filter(
+          (key) =>
+            key.startsWith(`${namespace}.`) &&
+            key.slice(namespace.length + 1).split(".").length === 1,
+        );
+
+  return new Proxy(
+    {},
+    {
+      get: (_, prop: string) => {
+        if (prop in cachedblock) {
+          return cachedblock[prop];
+        }
+
+        const finalKey = namespace === "#" ? prop : `${namespace}.${prop}`;
+
+        if (unitKeys.includes(finalKey)) {
+          const def = mainDefs[finalKey];
+
+          if (isFactory(def)) {
+            const value = def();
+            cachedblock[prop] = value;
+            mainCache[finalKey] = value;
+            return value;
+          }
+
+          cachedblock[prop] = def;
+          mainCache[finalKey] = def;
+          return def;
+        }
+
+        throw new Error(
+          `Key ${String(prop)} not found in block "${namespace}"`,
+        );
+      },
+    },
+  ) as BlockProxy<L, P, N>;
 }
 
 /**
@@ -120,7 +180,7 @@ function createInjector<Defs extends List, P extends string>(
  * // ".service", ".repository", ".validator"
  * ```
  */
-export function block<L extends List, Prefix extends string>(
+export function createBlock<L extends List, Prefix extends string>(
   name: Prefix,
   units: L,
 ): Namespaced<Prefix, L> {
@@ -138,10 +198,15 @@ export function mockInjection<D extends Func, L extends List>(
   units: L,
 ): D {
   return function () {
+    const oldPublicKeys = publicKeys;
+    publicKeys = getPublicKeys(units);
     const oldMainCache = mainCache;
-    mainCache = units;
+    const oldMainDefs = mainDefs;
+    mainDefs = units;
     const result = unit(...arguments);
     mainCache = oldMainCache;
+    mainDefs = oldMainDefs;
+    publicKeys = oldPublicKeys;
     return result;
   } as D;
 }
@@ -151,10 +216,15 @@ export function mockFactory<D extends Func, L extends List>(
   units: L,
 ): ReturnType<D> {
   return function () {
+    const oldPublicKeys = publicKeys;
+    publicKeys = getPublicKeys(units);
     const oldMainCache = mainCache;
-    mainCache = units;
+    const oldMainDefs = mainDefs;
+    mainDefs = units;
     const result = unit()(...arguments);
     mainCache = oldMainCache;
+    mainDefs = oldMainDefs;
+    publicKeys = oldPublicKeys;
     return result;
   } as ReturnType<D>;
 }
@@ -190,20 +260,60 @@ type BuildMap<T extends List> = {
   [K in keyof T as Extract<K, string>]: InferUnitValue<T[K]>;
 };
 
-type PrefixedKeys<L extends List, P extends string> = {
-  [K in keyof L]: K extends `${P}.${infer S}` ? `.${S}` : never;
-}[keyof L];
-
-type BlockKeys<L extends List, P extends string> = keyof L | PrefixedKeys<L, P>;
-
 type BlockInjector<L extends List, P extends string> = <
-  K extends BlockKeys<L, P>,
+  K extends BlockKeys<List> | "." | "#",
 >(
   key: K,
-) => K extends keyof L
-  ? L[K]
-  : K extends `.${string}`
-    ? `${P}${K}` extends keyof L
-      ? L[`${P}${K}`]
+) => BlockProxy<L, P, K>;
+
+type BlockProxy<
+  L extends List,
+  P extends string,
+  N extends string,
+> = N extends "."
+  ? {
+      [K in UnitKeys<L, P>]: L[`${P}.${K}`];
+    } //
+  : N extends "#"
+    ? {
+        [K in UnitKeys<L, "#">]: L["#"];
+      }
+    : {
+        [K in UnitKeys<L, N>]: L[`${N}.${K}`];
+      };
+
+type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
+
+type UnitKeys<L extends List, N extends string> = {
+  [K in keyof L]: N extends "#"
+    ? K extends NoDots<infer UnitName>
+      ? UnitName
       : never
-    : never;
+    : K extends `${N}.${NoDots<infer UnitName>}`
+      ? UnitName
+      : never;
+}[keyof L];
+
+type ParentKey<T extends string> = T extends `${infer S}.${infer C}`
+  ? C extends NoDots<C>
+    ? S
+    : `${S}.${ParentKey<C>}`
+  : never;
+
+type BlockKey<K extends string> =
+  K extends NoDots<K>
+    ? never // unit in root
+    : ParentKey<K>; // block name
+
+type BlockKeys<L extends List> = {
+  [K in keyof L]: BlockKey<Extract<K, string>>;
+}[keyof L];
+
+const o = {
+  a: 1,
+  "b.c": 2,
+  "b.c.otro": 2,
+  otro: 3,
+};
+
+export type X = BlockKeys<typeof o>;

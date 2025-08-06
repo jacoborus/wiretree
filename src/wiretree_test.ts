@@ -1,14 +1,13 @@
 import { assertEquals } from "@std/assert";
 import {
   createApp,
-  block,
+  createBlock,
   mockInjection,
   mockFactory,
   getInjector,
 } from "./wiretree.ts";
 
 Deno.test("createApp resolves dependencies", () => {
-  createApp({});
   const defs = {
     key: "value",
     "@nested.subKey": "subValue",
@@ -16,18 +15,18 @@ Deno.test("createApp resolves dependencies", () => {
 
   const app = createApp(defs);
 
-  assertEquals(app("key"), "value");
-  assertEquals(app("@nested.subKey"), "subValue");
+  assertEquals(app("#").key, "value");
+  assertEquals(app("@nested").subKey, "subValue");
 });
 
 Deno.test("block creates namespaced definitions", () => {
   createApp({});
-  const blockInstance = block("namespace", {
+  const blockInstance = createBlock("namespace", {
     key: 5,
     key2: 6,
   });
 
-  const blockParent = block("@parent", {
+  const blockParent = createBlock("@parent", {
     ...blockInstance,
   });
 
@@ -48,22 +47,22 @@ Deno.test("error handling for missing dependencies", () => {
   try {
     try {
       try {
-        app("nonexistent" as "key");
+        app("nonexistent" as "#");
         throw new Error("Should have thrown an error");
       } catch (e: unknown) {
         if (e instanceof Error) {
-          assertEquals(e.message, 'Unit nonexistent not found from block ""');
+          assertEquals(e.message, 'Unit nonexistent not found from block "#"');
         }
       }
     } catch (e) {
       assertEquals(
         (e as Error).message,
-        'Key nonexistent not found from block ""',
+        'Key nonexistent not found from block "#"',
       );
     }
   } catch (error) {
     if (error instanceof Error) {
-      assertEquals(error.message, 'Key nonexistent not found from block ""');
+      assertEquals(error.message, 'Key nonexistent not found from block "#"');
     }
   }
 });
@@ -80,7 +79,8 @@ Deno.test("mockInjection", () => {
   const injector = getInjector<typeof fakeUnits>()("@test.service");
 
   const getUser = mockInjection((email: string) => {
-    const getByEmail = injector("@test.service.getByEmail");
+    // const getByEmail = injector(".").getByEmail;
+    const getByEmail = injector("@test.service").getByEmail;
     return getByEmail(email);
   }, fakeUnits);
 
@@ -99,7 +99,7 @@ Deno.test("mockFactory", () => {
   const inj = getInjector<typeof fakeUnits>()("@test.service");
 
   const getUser = mockFactory(() => {
-    const getByEmail = inj("@test.service.getByEmail");
+    const getByEmail = inj("@test.service").getByEmail;
     return (email: string) => getByEmail(email);
   }, fakeUnits);
 

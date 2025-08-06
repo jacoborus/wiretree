@@ -7,7 +7,7 @@ const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(app("valor"));
+    console.log(app().valor);
   },
   test: () => "testtttt",
   ...userMod,
@@ -15,19 +15,19 @@ const defs = {
 };
 
 export type Defs = typeof defs;
+console.log(defs);
 
 export const app = createApp(defs);
+console.log(app("#").valor);
+app("#").printValor();
+console.log(app("#").test());
 
-console.log(app("valor"));
-app("printValor")();
-console.log(app("test")());
-
-const addUser = app("@user.service.addUser");
+const addUser = app("@user.service").addUser;
 const userId = addUser("jacobo", "jacobo@example.com", true);
-console.log(app("@user.service.getUsers")());
-const addPost = app("@post.service.addPost");
+console.log(app("@user.service").getUsers());
+const addPost = app("@post.service").addPost;
 const postId = addPost("Hello World", "This is a test post", userId);
 addPost("Hola Mundo!", "Esto es una entrada de prueba", userId);
-const thePost = app("@post.service.getPost")(postId);
+const thePost = app("@post.service").getPost(postId);
 console.log(thePost);
-console.log(app("@post.service.getPosts")());
+console.log(app("@post.service").getPosts());
