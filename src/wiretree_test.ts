@@ -1,10 +1,10 @@
 import { assertEquals } from "@std/assert";
 import {
-  wireApp,
   createBlock,
-  mockInjection,
-  mockFactory,
   getInjector,
+  mockFactory,
+  mockInjection,
+  wireApp,
 } from "./wiretree.ts";
 
 Deno.test("wireApp resolves dependencies", () => {

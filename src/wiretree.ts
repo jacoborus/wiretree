@@ -5,7 +5,7 @@ let publicKeys: string[] = [];
 let proxiesCache: Map<string, any> = new Map();
 
 export function getInjector<L extends List>() {
-  return function <N extends string>(namespace: N) {
+  return function <N extends BlockKeys<L>>(namespace: N) {
     return createInjector<L, N>(namespace);
   };
 }
