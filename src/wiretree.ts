@@ -5,7 +5,7 @@ let publicKeys: string[] = [];
 let proxiesCache: Map<string, unknown> = new Map();
 
 export function getInjector<L extends List>() {
-  return function <N extends BlockKeys<L>>(namespace: N) {
+  return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
     return createInjector<L, N>(namespace);
   };
 }
@@ -19,7 +19,9 @@ export function wireApp<Defs extends List>(defs: Defs) {
   return createInjector<Defs, "">("");
 }
 
-function createInjector<Defs extends List, P extends string>(parent: P) {
+function createInjector<Defs extends List, P extends string>(
+  parent: P,
+): BlockInjector<Defs, P> {
   if (takenInjectors.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
@@ -27,7 +29,7 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
   const localCache: Record<string, unknown> = {};
   takenInjectors.add(parent);
 
-  return function <K extends "." | "" | BlockKeys<Defs>>(
+  return function blockInjector<K extends "." | "" | BlockKeys<Defs>>(
     key = "" as K,
   ): BlockProxy<Defs, P, K> {
     type ThisProxy = BlockProxy<Defs, P, K>;
@@ -197,11 +199,11 @@ type Namespaced<N extends string, L extends List> = {
   [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
 };
 
-// type BlockInjector<L extends List, P extends string> = <
-//   K extends BlockKeys<List> | "." | "",
-// >(
-//   key: K,
-// ) => BlockProxy<L, P, K>;
+type BlockInjector<L extends List, P extends string> = <
+  K extends "." | "" | BlockKeys<L>,
+>(
+  key?: K,
+) => BlockProxy<L, P, K>;
 
 type BlockProxy<
   L extends List,
