@@ -2,7 +2,7 @@ let mainDefs: List = {};
 let mainCache: List = {};
 let takenInjectors = new Set<string>();
 let publicKeys: string[] = [];
-let proxiesCache: Map<string, any> = new Map();
+let proxiesCache: Map<string, unknown> = new Map();
 
 export function getInjector<L extends List>() {
   return function <N extends BlockKeys<L>>(namespace: N) {
@@ -24,7 +24,7 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
-  const localCache: Record<string, any> = {};
+  const localCache: Record<string, unknown> = {};
   takenInjectors.add(parent);
 
   return function <K extends "." | "" | BlockKeys<Defs>>(
@@ -87,7 +87,10 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
   return new Proxy(
     {}, // used as a cache for the block
     {
-      get: <K extends string>(cachedblock: Record<string, any>, prop: K) => {
+      get: <K extends string>(
+        cachedblock: Record<string, unknown>,
+        prop: K,
+      ) => {
         type ProxyValue = InferUnitValue<N extends "" ? L[K] : L[`${N}.${K}`]>;
 
         if (prop in cachedblock) {
@@ -179,7 +182,7 @@ function isFactory<T>(unit: () => T): unit is Factory<T> {
 type List = Record<string, any>;
 
 interface Factory<T> {
-  (...args: any[]): T;
+  (...args: unknown[]): T;
   factory: true;
 }
 
