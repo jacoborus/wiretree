@@ -5,40 +5,11 @@ let publicKeys: string[] = [];
 let proxiesCache: Record<string, any> = {};
 
 export function getInjector<L extends List>() {
-  return function <N extends string>(
-    namespace = "#" as N,
-  ): BlockInjector<BuildMap<L>, N> {
+  return function <N extends string>(namespace: N) {
     return createInjector<L, N>(namespace);
   };
 }
 
-/**
- * Creates the main application injector that manages all units and their resolution.
- *
- * This is the core function that creates a dependency injection container. It provides
- * automatic dependency resolution, caching, and hierarchical dependency management.
- * The returned injector function can resolve any unit defined in the application.
- *
- * @template Defs - The type of the unit definitions object
- *
- * @param defs - Object containing all unit definitions for the application
- *
- * @returns The root injector function that can resolve any unit by key
- *
- * @example
- * ```ts
- * const app = createApp({
- *   db: plain(database),
- *   logger: factory(() => new Logger()),
- *   ...userModule,
- * });
- *
- * // Use the injector to get units
- * const db = app("db");
- * const logger = app("logger");
- * const getUser = app("@user.service.getUSer");
- * ```
- */
 export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
@@ -48,21 +19,18 @@ export function createApp<Defs extends List>(defs: Defs) {
   return createInjector<Defs, "#">("#");
 }
 
-function createInjector<Defs extends List, P extends string>(
-  parent = "#" as P,
-): BlockInjector<BuildMap<Defs>, P> {
+function createInjector<Defs extends List, P extends string>(parent: P) {
   if (takenInjectors.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
-  type AppObj = BuildMap<Defs>;
   const localCache: Record<string, any> = {};
   takenInjectors.add(parent);
 
-  return function <K extends "." | "#" | BlockKeys<AppObj>>(
+  return function <K extends "." | "#" | BlockKeys<Defs>>(
     key = "#" as K,
-  ): BlockProxy<AppObj, P, K> {
-    type ThisProxy = BlockProxy<AppObj, P, K>;
+  ): BlockProxy<Defs, P, K> {
+    type ThisProxy = BlockProxy<Defs, P, K>;
     if (key in localCache) {
       return localCache[key] as ThisProxy;
     }
@@ -107,7 +75,6 @@ function getPublicKeys<L extends List>(defs: L): BlockKeys<L>[] {
 function createBlockProxy<L extends List, P extends string, N extends string>(
   namespace: N,
 ): BlockProxy<L, P, N> {
-  const cachedblock: Record<string, any> = {};
   const unitKeys =
     namespace === "#"
       ? Object.keys(mainDefs).filter((key) => key.split(".").length === 1)
@@ -118,11 +85,13 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
         );
 
   return new Proxy(
-    {},
+    {}, // used as a cache for the block
     {
-      get: (_, prop: string) => {
+      get: <K extends string>(cachedblock: Record<string, any>, prop: K) => {
+        type ProxyValue = InferUnitValue<N extends "#" ? L[K] : L[`${N}.${K}`]>;
+
         if (prop in cachedblock) {
-          return cachedblock[prop];
+          return cachedblock[prop] as ProxyValue;
         }
 
         const finalKey = namespace === "#" ? prop : `${namespace}.${prop}`;
@@ -134,12 +103,12 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
             const value = def();
             cachedblock[prop] = value;
             mainCache[finalKey] = value;
-            return value;
+            return value as ProxyValue;
           }
 
           cachedblock[prop] = def;
           mainCache[finalKey] = def;
-          return def;
+          return def as ProxyValue;
         }
 
         throw new Error(
@@ -150,36 +119,6 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
   ) as BlockProxy<L, P, N>;
 }
 
-/**
- * Creates a namespaced block of units.
- *
- * This function takes a collection of unit definitions and organizes them
- * under a common namespace. Each definition in the block will have its parent
- * property augmented to set to the block's name as its antecessor, enabling
- * hierarchical dependency resolution.
- *
- * @template D - The type of the dependency definitions object
- * @template Prefix - The string literal type of the namespace prefix
- *
- * @param name - The namespace prefix for the block (e.g., "@user", "@api")
- * @param units - Object containing unit definitions to be grouped
- *
- * @returns A block object with prefixed parent properties
- *
- * @example
- * ```ts
- * const userBlock = block("@user", {
- *   ...userService, // another block
- *   repository: userRepository,
- *   validator: plain(new UserValidator()),
- * });
- *
- * // Results in units accessible as:
- * // "@user.service", "@user.repository", "@user.validator"
- * // Or from the same block:
- * // ".service", ".repository", ".validator"
- * ```
- */
 export function createBlock<L extends List, Prefix extends string>(
   name: Prefix,
   units: L,
@@ -234,7 +173,6 @@ function isFactory<T>(unit: () => T): unit is Factory<T> {
     typeof unit === "function" && "factory" in unit && unit.factory === true
   );
 }
-type IsFactory<F> = F extends { (): any; factory: true } ? true : false;
 
 // =======
 
@@ -256,15 +194,11 @@ type Namespaced<N extends string, L extends List> = {
   [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
 };
 
-type BuildMap<T extends List> = {
-  [K in keyof T as Extract<K, string>]: InferUnitValue<T[K]>;
-};
-
-type BlockInjector<L extends List, P extends string> = <
-  K extends BlockKeys<List> | "." | "#",
->(
-  key: K,
-) => BlockProxy<L, P, K>;
+// type BlockInjector<L extends List, P extends string> = <
+//   K extends BlockKeys<List> | "." | "#",
+// >(
+//   key: K,
+// ) => BlockProxy<L, P, K>;
 
 type BlockProxy<
   L extends List,
@@ -272,14 +206,14 @@ type BlockProxy<
   N extends string,
 > = N extends "."
   ? {
-      [K in UnitKeys<L, P>]: L[`${P}.${K}`];
+      [K in UnitKeys<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
     } //
   : N extends "#"
     ? {
-        [K in UnitKeys<L, "#">]: L["#"];
+        [K in UnitKeys<L, "#">]: InferUnitValue<L[K]>;
       }
     : {
-        [K in UnitKeys<L, N>]: L[`${N}.${K}`];
+        [K in UnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
       };
 
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
@@ -305,7 +239,7 @@ type BlockKey<K extends string> =
     ? never // unit in root
     : ParentKey<K>; // block name
 
-type BlockKeys<L extends List> = {
+export type BlockKeys<L extends List> = {
   [K in keyof L]: BlockKey<Extract<K, string>>;
 }[keyof L];
 
@@ -316,4 +250,4 @@ const o = {
   otro: 3,
 };
 
-export type X = BlockKeys<typeof o>;
+type X = BlockKeys<typeof o>;

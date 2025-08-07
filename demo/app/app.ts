@@ -7,12 +7,12 @@ const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(app().valor);
+    console.log(app("#").valor);
   },
   test: () => "testtttt",
   ...userMod,
   ...postMod,
-};
+} as const;
 
 export type Defs = typeof defs;
 console.log(defs);
