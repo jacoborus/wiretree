@@ -1,13 +1,13 @@
 import { db } from "../db.ts";
 import postMod from "../post/postMod.ts";
 import userMod from "../user/userMod.ts";
-import { createApp } from "../../src/wiretree.ts";
+import { wireApp } from "../../src/wiretree.ts";
 
 const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(app("#").valor);
+    console.log(app("").valor);
   },
   test: () => "testtttt",
   ...userMod,
@@ -17,10 +17,10 @@ const defs = {
 export type Defs = typeof defs;
 console.log(defs);
 
-export const app = createApp(defs);
-console.log(app("#").valor);
-app("#").printValor();
-console.log(app("#").test());
+export const app = wireApp(defs);
+console.log(app("").valor);
+app("").printValor();
+console.log(app("").test());
 
 const addUser = app("@user.service").addUser;
 const userId = addUser("jacobo", "jacobo@example.com", true);

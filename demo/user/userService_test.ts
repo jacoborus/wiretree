@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { mockInjection, createApp } from "../../src/wiretree.ts";
+import { mockInjection, wireApp } from "../../src/wiretree.ts";
 
 import type { User, Post } from "../db.ts";
 import {
@@ -8,7 +8,7 @@ import {
 } from "./userService.ts";
 
 Deno.test(function addUsertTest() {
-  createApp({});
+  wireApp({});
   const db = { users: [] as User[], posts: [] as Post[] };
 
   const fakeUnits = {

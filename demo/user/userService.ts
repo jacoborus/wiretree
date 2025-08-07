@@ -4,17 +4,17 @@ import type { Defs } from "../app/app.ts";
 const inj = getInjector<Defs>()("@user.service");
 
 export function getUsers() {
-  const db = inj("#").db;
+  const db = inj("").db;
   return db.users;
 }
 
 export function getUser(id: string) {
-  const db = inj("#").db;
+  const db = inj("").db;
   return db.users.find((user) => user.id === id);
 }
 
 export function getUserByEmail(email: string) {
-  const db = inj("#").db;
+  const db = inj("").db;
   return db.users.find((user) => user.email === email);
 }
 
@@ -31,7 +31,7 @@ export function addUser(name: string, email: string, isAdmin = false) {
     email,
     isAdmin,
   };
-  const db = inj("#").db;
+  const db = inj("").db;
   db.users.push(user);
   return user.id;
 }

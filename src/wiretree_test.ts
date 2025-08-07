@@ -1,26 +1,26 @@
 import { assertEquals } from "@std/assert";
 import {
-  createApp,
+  wireApp,
   createBlock,
   mockInjection,
   mockFactory,
   getInjector,
 } from "./wiretree.ts";
 
-Deno.test("createApp resolves dependencies", () => {
+Deno.test("wireApp resolves dependencies", () => {
   const defs = {
     key: "value",
     "@nested.subKey": "subValue",
   };
 
-  const app = createApp(defs);
+  const app = wireApp(defs);
 
-  assertEquals(app("#").key, "value");
+  assertEquals(app("").key, "value");
   assertEquals(app("@nested").subKey, "subValue");
 });
 
 Deno.test("block creates namespaced definitions", () => {
-  createApp({});
+  wireApp({});
   const blockInstance = createBlock("namespace", {
     key: 5,
     key2: 6,
@@ -37,38 +37,38 @@ Deno.test("block creates namespaced definitions", () => {
 });
 
 Deno.test("error handling for missing dependencies", () => {
-  createApp({});
+  wireApp({});
   const defs = {
     key: "value",
   };
 
-  const app = createApp(defs);
+  const app = wireApp(defs);
 
   try {
     try {
       try {
-        app("nonexistent" as "#");
+        app("nonexistent" as "");
         throw new Error("Should have thrown an error");
       } catch (e: unknown) {
         if (e instanceof Error) {
-          assertEquals(e.message, 'Unit nonexistent not found from block "#"');
+          assertEquals(e.message, 'Unit nonexistent not found from block ""');
         }
       }
     } catch (e) {
       assertEquals(
         (e as Error).message,
-        'Key nonexistent not found from block "#"',
+        'Key nonexistent not found from block ""',
       );
     }
   } catch (error) {
     if (error instanceof Error) {
-      assertEquals(error.message, 'Key nonexistent not found from block "#"');
+      assertEquals(error.message, 'Key nonexistent not found from block ""');
     }
   }
 });
 
 Deno.test("mockInjection", () => {
-  createApp({});
+  wireApp({});
   const fakeUnits = {
     "@test.service.getByEmail": (email: string) => {
       assertEquals(email, "email");
@@ -88,7 +88,7 @@ Deno.test("mockInjection", () => {
 });
 
 Deno.test("mockFactory", () => {
-  createApp({});
+  wireApp({});
   const fakeUnits = {
     "@test.service.getByEmail": (email: string) => {
       assertEquals(email, "email");

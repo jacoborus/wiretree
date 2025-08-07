@@ -10,13 +10,13 @@ export function getInjector<L extends List>() {
   };
 }
 
-export function createApp<Defs extends List>(defs: Defs) {
+export function wireApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
   proxiesCache = new Map();
   publicKeys = getPublicKeys(defs);
   takenInjectors = new Set<string>();
-  return createInjector<Defs, "#">("#");
+  return createInjector<Defs, "">("");
 }
 
 function createInjector<Defs extends List, P extends string>(parent: P) {
@@ -27,8 +27,8 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
   const localCache: Record<string, any> = {};
   takenInjectors.add(parent);
 
-  return function <K extends "." | "#" | BlockKeys<Defs>>(
-    key = "#" as K,
+  return function <K extends "." | "" | BlockKeys<Defs>>(
+    key = "" as K,
   ): BlockProxy<Defs, P, K> {
     type ThisProxy = BlockProxy<Defs, P, K>;
     if (key in localCache) {
@@ -43,10 +43,10 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
       return proxy;
     }
 
-    if (k === "#") {
-      const proxy = createBlockProxy("#") as ThisProxy;
-      localCache["#"] = proxy;
-      proxiesCache.set("#", proxy);
+    if (k === "") {
+      const proxy = createBlockProxy("") as ThisProxy;
+      localCache[""] = proxy;
+      proxiesCache.set("", proxy);
       return proxy;
     }
 
@@ -76,7 +76,7 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
   namespace: N,
 ): BlockProxy<L, P, N> {
   const unitKeys =
-    namespace === "#"
+    namespace === ""
       ? Object.keys(mainDefs).filter((key) => key.split(".").length === 1)
       : Object.keys(mainDefs).filter(
           (key) =>
@@ -88,13 +88,13 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
     {}, // used as a cache for the block
     {
       get: <K extends string>(cachedblock: Record<string, any>, prop: K) => {
-        type ProxyValue = InferUnitValue<N extends "#" ? L[K] : L[`${N}.${K}`]>;
+        type ProxyValue = InferUnitValue<N extends "" ? L[K] : L[`${N}.${K}`]>;
 
         if (prop in cachedblock) {
           return cachedblock[prop] as ProxyValue;
         }
 
-        const finalKey = namespace === "#" ? prop : `${namespace}.${prop}`;
+        const finalKey = namespace === "" ? prop : `${namespace}.${prop}`;
 
         if (unitKeys.includes(finalKey)) {
           const def = mainDefs[finalKey];
@@ -195,7 +195,7 @@ type Namespaced<N extends string, L extends List> = {
 };
 
 // type BlockInjector<L extends List, P extends string> = <
-//   K extends BlockKeys<List> | "." | "#",
+//   K extends BlockKeys<List> | "." | "",
 // >(
 //   key: K,
 // ) => BlockProxy<L, P, K>;
@@ -208,9 +208,9 @@ type BlockProxy<
   ? {
       [K in UnitKeys<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
     } //
-  : N extends "#"
+  : N extends ""
     ? {
-        [K in UnitKeys<L, "#">]: InferUnitValue<L[K]>;
+        [K in UnitKeys<L, "">]: InferUnitValue<L[K]>;
       }
     : {
         [K in UnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
@@ -219,7 +219,7 @@ type BlockProxy<
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
 type UnitKeys<L extends List, N extends string> = {
-  [K in keyof L]: N extends "#"
+  [K in keyof L]: N extends ""
     ? K extends NoDots<infer UnitName>
       ? UnitName
       : never
