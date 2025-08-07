@@ -239,15 +239,6 @@ type BlockKey<K extends string> =
     ? never // unit in root
     : ParentKey<K>; // block name
 
-export type BlockKeys<L extends List> = {
+type BlockKeys<L extends List> = {
   [K in keyof L]: BlockKey<Extract<K, string>>;
 }[keyof L];
-
-const o = {
-  a: 1,
-  "b.c": 2,
-  "b.c.otro": 2,
-  otro: 3,
-};
-
-type X = BlockKeys<typeof o>;
