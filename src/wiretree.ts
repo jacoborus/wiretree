@@ -2,7 +2,7 @@ let mainDefs: List = {};
 let mainCache: List = {};
 let takenInjectors = new Set<string>();
 let publicKeys: string[] = [];
-let proxiesCache: Record<string, any> = {};
+let proxiesCache: Map<string, any> = new Map();
 
 export function getInjector<L extends List>() {
   return function <N extends string>(namespace: N) {
@@ -13,7 +13,7 @@ export function getInjector<L extends List>() {
 export function createApp<Defs extends List>(defs: Defs) {
   mainDefs = defs;
   mainCache = {};
-  proxiesCache = {};
+  proxiesCache = new Map();
   publicKeys = getPublicKeys(defs);
   takenInjectors = new Set<string>();
   return createInjector<Defs, "#">("#");
@@ -39,21 +39,21 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
     if (k === ".") {
       const proxy = createBlockProxy(parent) as unknown as ThisProxy;
       localCache["."] = proxy;
-      proxiesCache[parent] = proxy;
+      proxiesCache.set(parent, proxy);
       return proxy;
     }
 
     if (k === "#") {
       const proxy = createBlockProxy("#") as ThisProxy;
       localCache["#"] = proxy;
-      proxiesCache["#"] = proxy;
+      proxiesCache.set("#", proxy);
       return proxy;
     }
 
     if (publicKeys.includes(k)) {
       const proxy = createBlockProxy(k) as ThisProxy;
       localCache[k] = proxy;
-      proxiesCache[k] = proxy;
+      proxiesCache.set(k, proxy);
       return proxy;
     }
 
