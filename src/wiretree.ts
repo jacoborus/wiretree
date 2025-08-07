@@ -5,7 +5,7 @@ let publicKeys: string[] = [];
 let proxiesCache: Map<string, unknown> = new Map();
 
 export function getInjector<L extends List>() {
-  return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
+  return function <N extends BlockKeys<L>>(namespace: N) {
     return createInjector<L, N>(namespace);
   };
 }
@@ -19,9 +19,7 @@ export function wireApp<Defs extends List>(defs: Defs) {
   return createInjector<Defs, "">("");
 }
 
-function createInjector<Defs extends List, P extends string>(
-  parent: P,
-): BlockInjector<Defs, P> {
+function createInjector<Defs extends List, P extends string>(parent: P) {
   if (takenInjectors.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
@@ -29,10 +27,17 @@ function createInjector<Defs extends List, P extends string>(
   const localCache: Record<string, unknown> = {};
   takenInjectors.add(parent);
 
-  return function blockInjector<K extends "." | "" | BlockKeys<Defs>>(
-    key = "" as K,
-  ): BlockProxy<Defs, P, K> {
-    type ThisProxy = BlockProxy<Defs, P, K>;
+  function blockInjector(): BlockProxy<Defs, P, "">;
+  function blockInjector<K extends "." | BlockKeys<Defs>>(
+    blockKey: K,
+  ): BlockProxy<Defs, P, K extends undefined ? "" : K>;
+  function blockInjector<K extends "." | BlockKeys<Defs>>(
+    blockKey?: K,
+  ): BlockProxy<Defs, P, K extends undefined ? "" : K> {
+    const key = (blockKey ?? "") as K extends undefined ? "" : K;
+
+    type ThisProxy = BlockProxy<Defs, P, K extends undefined ? "" : K>;
+
     if (key in localCache) {
       return localCache[key] as ThisProxy;
     }
@@ -60,7 +65,9 @@ function createInjector<Defs extends List, P extends string>(
     }
 
     throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
-  };
+  }
+
+  return blockInjector;
 }
 
 function getPublicKeys<L extends List>(defs: L): BlockKeys<L>[] {

@@ -7,7 +7,7 @@ const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(app("").valor);
+    console.log(appRoot().valor);
   },
   test: () => "testtttt",
   ...userMod,
@@ -17,17 +17,17 @@ const defs = {
 export type Defs = typeof defs;
 console.log(defs);
 
-export const app = wireApp(defs);
-console.log(app("").valor);
-app("").printValor();
-console.log(app("").test());
+export const appRoot = wireApp(defs);
+console.log(appRoot().valor);
+appRoot().printValor();
+console.log(appRoot().test());
 
-const addUser = app("@user.service").addUser;
+const addUser = appRoot("@user.service").addUser;
 const userId = addUser("jacobo", "jacobo@example.com", true);
-console.log(app("@user.service").getUsers());
-const addPost = app("@post.service").addPost;
+console.log(appRoot("@user.service").getUsers());
+const addPost = appRoot("@post.service").addPost;
 const postId = addPost("Hello World", "This is a test post", userId);
 addPost("Hola Mundo!", "Esto es una entrada de prueba", userId);
-const thePost = app("@post.service").getPost(postId);
+const thePost = appRoot("@post.service").getPost(postId);
 console.log(thePost);
-console.log(app("@post.service").getPosts());
+console.log(appRoot("@post.service").getPosts());

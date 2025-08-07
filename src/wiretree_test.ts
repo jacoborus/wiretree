@@ -15,7 +15,7 @@ Deno.test("wireApp resolves dependencies", () => {
 
   const app = wireApp(defs);
 
-  assertEquals(app("").key, "value");
+  assertEquals(app().key, "value");
   assertEquals(app("@nested").subKey, "subValue");
 });
 
@@ -47,7 +47,7 @@ Deno.test("error handling for missing dependencies", () => {
   try {
     try {
       try {
-        app("nonexistent" as "");
+        app("nonexistent" as ".");
         throw new Error("Should have thrown an error");
       } catch (e: unknown) {
         if (e instanceof Error) {
