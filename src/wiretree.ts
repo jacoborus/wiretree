@@ -5,12 +5,14 @@ let publicKeys: string[] = [];
 let proxiesCache: Map<string, unknown> = new Map();
 
 export function getInjector<L extends List>() {
-  return function <N extends BlockKeys<L>>(namespace: N) {
+  return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
     return createInjector<L, N>(namespace);
   };
 }
 
-export function wireApp<Defs extends List>(defs: Defs) {
+export function wireApp<Defs extends List>(
+  defs: Defs,
+): BlockInjector<Defs, ""> {
   mainDefs = defs;
   mainCache = {};
   proxiesCache = new Map();
@@ -19,7 +21,9 @@ export function wireApp<Defs extends List>(defs: Defs) {
   return createInjector<Defs, "">("");
 }
 
-function createInjector<Defs extends List, P extends string>(parent: P) {
+function createInjector<Defs extends List, P extends string>(
+  parent: P,
+): BlockInjector<Defs, P> {
   if (takenInjectors.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
@@ -30,7 +34,7 @@ function createInjector<Defs extends List, P extends string>(parent: P) {
   function blockInjector(): BlockProxy<Defs, P, "">;
   function blockInjector<K extends "." | BlockKeys<Defs>>(
     blockKey: K,
-  ): BlockProxy<Defs, P, K extends undefined ? "" : K>;
+  ): BlockProxy<Defs, P, K>;
   function blockInjector<K extends "." | BlockKeys<Defs>>(
     blockKey?: K,
   ): BlockProxy<Defs, P, K extends undefined ? "" : K> {
@@ -131,6 +135,10 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
   ) as BlockProxy<L, P, N>;
 }
 
+type Namespaced<N extends string, L extends List> = {
+  [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
+};
+
 export function createBlock<L extends List, Prefix extends string>(
   name: Prefix,
   units: L,
@@ -202,15 +210,10 @@ type InferUnitValue<D> =
 
 type Func = (...args: any[]) => any;
 
-type Namespaced<N extends string, L extends List> = {
-  [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
+type BlockInjector<L extends List, P extends string> = {
+  (): BlockProxy<L, P, "">;
+  <K extends "." | "" | BlockKeys<L>>(key?: K): BlockProxy<L, P, K>;
 };
-
-type BlockInjector<L extends List, P extends string> = <
-  K extends "." | "" | BlockKeys<L>,
->(
-  key?: K,
-) => BlockProxy<L, P, K>;
 
 type BlockProxy<
   L extends List,
