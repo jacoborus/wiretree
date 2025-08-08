@@ -324,7 +324,7 @@ type BlockKeys<L extends List> = {
   [K in keyof L]: BlockKey<Extract<K, string>>;
 }[keyof L];
 
-type IsAsync<T> = T extends (...args: any[]) => Promise<any>
+type IsAsync<T> = T extends (...args: unknown[]) => Promise<unknown>
   ? true
   : T extends Promise<unknown>
     ? true
