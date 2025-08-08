@@ -9,7 +9,7 @@ Deno.test(function addPostTest() {
   const db = { user: [] as User[], posts: [] as Post[] };
   const fakeUnits = {
     db,
-    "@user.service.getUser": (id: string) => ({
+    "user.service.getUser": (id: string) => ({
       id,
       name: "jacobo",
       email: "asdfasdf@qfasdfasd.asdf",

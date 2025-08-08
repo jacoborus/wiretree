@@ -17,13 +17,6 @@ export interface Database {
   posts: Post[];
 }
 
-// export function db() {
-//   return {
-//     users: [],
-//     posts: [],
-//   } as Database;
-// }
-
 export const db = {
   users: [],
   posts: [],

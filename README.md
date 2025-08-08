@@ -14,11 +14,11 @@ API might change
 - **🔒 Type-Safe**: Full TypeScript support without manual type annotations  
 - **🧱 Compositional**: Compose complex applications from small, reusable units  
 - **♻️ Circular Dependency-Free**: Designed to eliminate circular dependencies  
-- **🤯 No decorators, no classes**, no gorillas, no jungles — just the bananas  
+- **🤯 No decorators, no classes**, no gorillas, no jungles. Just the bananas  
 - **🌲 Hierarchical**: Organize dependencies using namespaces and blocks  
 - **🧪 Testable**: Built-in utilities for easy mocking and isolated testing  
 - **🪶 Lightweight**: Minimal runtime overhead with smart, built-in caching  
-- **🔌 Zero Configuration**: Just install and import — no setup needed  
+- **🔌 Zero Configuration**: Just install and import, no setup needed  
 - **🔨 Simple API**: So simple, it hurts  
 
 ## 📚 Core Concepts

@@ -1,7 +1,7 @@
 import { createInjector } from "../../src/wiremap.ts";
 import type { Defs } from "../app/app.ts";
 
-const inj = createInjector<Defs>()("@user.service");
+const inj = createInjector<Defs>()("user.service");
 
 export function getUsers() {
   const db = inj().db;

@@ -7,7 +7,7 @@ const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(appRoot().valor);
+    console.log(appInjector().valor);
   },
   test: () => "testtttt",
   ...userMod,
@@ -16,14 +16,18 @@ const defs = {
 
 export type Defs = typeof defs;
 
-export const appRoot = await wireApp(defs);
+export const appInjector = await wireApp(defs);
 
-appRoot().printValor();
+appInjector().printValor();
 
-const addUser = appRoot("@user.service").addUser;
+const addUser = appInjector("user.service").addUser;
+
 const userId = addUser("jacobo", "jacobo@example.com", true);
-console.log("users:", appRoot("@user.service").getUsers());
-const addPost = appRoot("@post.service").addPost;
+console.log("users:", appInjector("user.service").getUsers());
+
+const addPost = appInjector("post.service").addPost;
+
 addPost("Hello World", "This is a test post", userId);
 addPost("Hola Mundo!", "Esto es una entrada de prueba", userId);
-console.log(appRoot("@post.service").getPosts());
+
+console.log(appInjector("post.service").getPosts());

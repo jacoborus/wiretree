@@ -1,7 +1,7 @@
 import { createInjector } from "../../src/wiremap.ts";
 import type { Defs } from "../app/app.ts";
 
-const inj = createInjector<Defs>()("@post.service");
+const inj = createInjector<Defs>()("post.service");
 
 export function getPosts() {
   const collection = inj(".").collection;
@@ -14,7 +14,7 @@ export function getPost(id: string) {
 }
 
 export function addPost(title: string, content: string, userId: string) {
-  const getUser = inj("@user.service").getUser;
+  const getUser = inj("user.service").getUser;
   const user = getUser(userId);
   if (!user) throw new Error(`User with id ${userId} does not exist.`);
 
