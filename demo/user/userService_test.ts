@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { mockInjection, wireApp } from "../../src/wiretree.ts";
+import { mockInjection, wireApp } from "../../src/wiremap.ts";
 
 import type { User, Post } from "../db.ts";
 import {

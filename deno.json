@@ -1,16 +1,16 @@
 {
   "name": "@jacoborus/wiremap",
-  "description": "Compositional dependency injection framework.",
   "version": "1.0.0-alpha.1",
+  "description": "Compositional dependency injection framework.",
   "exports": {
-    ".": "./src/wiretree.ts",
+    ".": "./src/wiremap.ts",
     "./testing": "./src/testing_util.ts"
   },
   "publish": {
     "include": [
       "LICENSE",
       "README.md",
-      "src/wiretree.ts"
+      "src/wiremap.ts"
     ]
   },
   "imports": {

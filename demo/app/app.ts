@@ -1,7 +1,7 @@
 import { db } from "../db.ts";
 import postMod from "../post/postMod.ts";
 import userMod from "../user/userMod.ts";
-import { wireApp } from "../../src/wiretree.ts";
+import { wireApp } from "../../src/wiremap.ts";
 
 const defs = {
   db,

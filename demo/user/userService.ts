@@ -1,4 +1,4 @@
-import { createInjector } from "../../src/wiretree.ts";
+import { createInjector } from "../../src/wiremap.ts";
 import type { Defs } from "../app/app.ts";
 
 const inj = createInjector<Defs>()("@user.service");

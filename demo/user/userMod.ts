@@ -1,4 +1,4 @@
-import { createBlock } from "../../src/wiretree.ts";
+import { createBlock } from "../../src/wiremap.ts";
 import * as userService from "./userService.ts";
 
 export default createBlock("@user", {

@@ -5,7 +5,7 @@ import {
   mockFactory,
   mockInjection,
   wireApp,
-} from "./wiretree.ts";
+} from "./wiremap.ts";
 
 Deno.test("wireApp resolves dependencies", () => {
   const defs = {
