@@ -158,6 +158,16 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
           `Key ${String(prop)} not found in block "${namespace}"`,
         );
       },
+      ownKeys() {
+        return unitKeys;
+      },
+      getOwnPropertyDescriptor() {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: false,
+        };
+      },
     },
   ) as BlockProxy<L, P, N>;
 }

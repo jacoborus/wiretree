@@ -11,12 +11,20 @@ Deno.test("wireApp resolves dependencies", () => {
   const defs = {
     key: "value",
     "@nested.subKey": "subValue",
+    "@nested.subKey2": "subValue2",
   };
 
   const app = wireApp(defs);
 
+  const keys = Object.keys(app());
+  assertEquals(keys.length, 1, "block proxies are ennumerable");
+
+  const nestedKeys = Object.keys(app("@nested"));
+  assertEquals(nestedKeys.length, 2, "nested block proxies are ennumerable");
+
   assertEquals(app().key, "value");
   assertEquals(app("@nested").subKey, "subValue");
+  assertEquals(app("@nested").subKey2, "subValue2");
 });
 
 Deno.test(
