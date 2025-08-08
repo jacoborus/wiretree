@@ -55,23 +55,6 @@ export function queryUser () {
   };
 }
 queryUser.isFactory = true as const;
-
-### Blocks
-
-Blocks are just groups of units or other blocks.
-To create a block use the `createBlock` function, then destructure it into other block or your root app definition.
-
-```ts
-// userModule.ts
-import { createBlock } from 'wiremap'
-
-import * as userService from './userService'
-import * as userRepo from './userRepo'
-
-export default createBlock('userModule', {
-  ...createBlock('service', userService),
-  ...createBlock('repo', userRepo),
-})
 ```
 
 ### Blocks
