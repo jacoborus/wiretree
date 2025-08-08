@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import {
   createBlock,
-  getInjector,
+  createInjector,
   mockFactory,
   mockInjection,
   wireApp,
@@ -45,7 +45,7 @@ Deno.test(
       factoryFn,
     };
     // @ts-ignore: it's just for the internal test
-    const inj = getInjector<typeof defs>()();
+    const inj = createInjector<typeof defs>()();
 
     const app = await wireApp(defs);
 
@@ -112,7 +112,7 @@ Deno.test("mockInjection", () => {
     },
   };
 
-  const injector = getInjector<typeof fakeUnits>()("@test.service");
+  const injector = createInjector<typeof fakeUnits>()("@test.service");
 
   const getUser = mockInjection((email: string) => {
     // const getByEmail = injector(".").getByEmail;
@@ -132,7 +132,7 @@ Deno.test("mockFactory", () => {
     },
   };
 
-  const inj = getInjector<typeof fakeUnits>()("@test.service");
+  const inj = createInjector<typeof fakeUnits>()("@test.service");
 
   const getUser = mockFactory(() => {
     const getByEmail = inj("@test.service").getByEmail;

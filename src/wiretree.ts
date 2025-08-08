@@ -4,9 +4,9 @@ let takenInjectors = new Set<string>();
 let publicKeys: string[] = [];
 let proxiesCache: Map<string, unknown> = new Map();
 
-export function getInjector<L extends List>() {
+export function createInjector<L extends List>() {
   return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
-    return createInjector<L, N>(namespace);
+    return generateInjector<L, N>(namespace);
   };
 }
 
@@ -21,7 +21,7 @@ export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
   proxiesCache = new Map();
   publicKeys = getPublicKeys(defs);
   takenInjectors = new Set<string>();
-  const injector = createInjector<Defs, "">("");
+  const injector = generateInjector<Defs, "">("");
 
   const asyncKeys = listAsyncKeys(defs);
   if (asyncKeys.length) {
@@ -44,7 +44,7 @@ async function resolveAsync<L extends List>(
   }
 }
 
-function createInjector<Defs extends List, P extends string>(
+function generateInjector<Defs extends List, P extends string>(
   parent: P,
 ): BlockInjector<Defs, P> {
   if (takenInjectors.has(parent)) {

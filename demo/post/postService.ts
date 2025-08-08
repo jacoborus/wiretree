@@ -1,7 +1,7 @@
-import { getInjector } from "../../src/wiretree.ts";
+import { createInjector } from "../../src/wiretree.ts";
 import type { Defs } from "../app/app.ts";
 
-const inj = getInjector<Defs>()("@post.service");
+const inj = createInjector<Defs>()("@post.service");
 
 export function getPosts() {
   const collection = inj(".").collection;
