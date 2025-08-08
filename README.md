@@ -6,8 +6,7 @@ maintainable, and testable applications with intuitive dependency management.
 
 ## ✨ Features
 
-- **🔒 Type-Safe**: Full TypeScript support with compile-time dependency
-  validation
+- **🔒 Type-Safe**: Full TypeScript support without manual type injection
 - **🧱 Compositional**: Build complex applications from simple, reusable units
 - **♻️ Without Circular Dependencies**: Eliminates circular dependencies by
   design
@@ -18,108 +17,94 @@ maintainable, and testable applications with intuitive dependency management.
 - **🔌 Zero Configuration**: Just install and import
 - **🔨 Simple API**: So simple, it hurts.
 
+
+## 📚 Core Concepts
+
+Wiremap apps are conformed by units arranged in hierarchical blocks.
+
+### Units
+
+Units can be any type of value, and can be injected individually or in block proxies into another units.
+Units are resolved and cached on demand.
+Units can be plain values or the result of a factory function. To declare a function as a factory function add the `isFactory` property as `true` to it. If the factory returns a promise it will also require the `isAsync` prop as `true` to work properly. Pure async factories don't need that flag as the JS runtime can detect the function is async. Having any async factory in your app will make the `wireApp` method to return a promise.
+Units can be wired directly to the root of the app or through namespaced blocks
+
+To define a unit, just declare it and export it:
+
+```ts
+export const config = {
+  port: 3000
+}
+
+export function ping () {
+  return 'pong';
+}
+
+export function queryUser () {
+  const db = getDbConnector()
+
+  return function (id: string) {
+    return db.users.find(id)
+  }
+}
+queryUser.isFactory = true as const;
+```
+
+### Blocks
+
+Blocks are just groups of units or other blocks.
+To create a block use the `createBlock` function, then destructure it into other block or your root app definition.
+
+```ts
+// userModule.ts
+import { createBlock } from 'wiremap'
+
+import * as userService from './userService'
+import * as userRepo from './userRepo'
+
+export default createBlock('userModule', {
+  ...createBlock('service', userService),
+  ...createBlock('repo', userRepo),
+})
+```
+
+### App
+
+Wiring an app requires an object containing all the units and blocks definitions. This definitions objects type has to be exported to be able to infer the types from injectors in another files.
+Wiring a definitions object will return the injector of the root of the app, unless any unit is an async factory, a promise containing the root injector will be returned.
+
+```ts
+import { wireApp } from 'wiremap'
+
+import userModule from './userModule'
+
+const units = {
+  config: { port: 3000 },
+  ...userModule
+}
+export type Units = typeof units
+
+const appInjector = wireApp(units)
+
+const root = appInjector()
+console.log(`App running on port ${root.config.port}`)
+
+const getUser = appInjector('userModule.service').getUser
+```
+
+
+### Injectors
+
+TODO
+
+
 ## 📦 Installation
 
 ```bash
 npm install wiremap
 ```
 
-## 🚀 Quick Start
 
-```ts
-import { wireApp } from "wiremap";
-
-// Define your units
-const defs = {
-  config: { apiUrl: "https://api.example.com" },
-  logger: (message: string) => {
-    console.log(`[LOG] ${message}`);
-  },
-  ...userService, // Import from other modules
-};
-
-export type Defs = typeof defs;
-
-// Create your application
-const app = wireApp(defs);
-
-// Use your dependencies
-const config = app().config;
-const log = app().logger;
-
-log(`Application started on ${config.apiUrl}`);
-```
-
-## 📚 Core Concepts
-
-### Unit Types
-
-#### `factory` - Lazy Singletons
-
-Create instances on-demand with access to other dependencies. Results are
-cached.
-
-To declare a function as factory, just add the property `factory` as
-`true as const` to it
-
-```ts
-const inj = getInjector<Defs>()("@http");
-
-const httpClient = function () {
-  const config = inj().config;
-  return new HttpClient(config.apiUrl);
-};
-httpClient.factory = true as const;
-
-const cache = () => new Map();
-cache.factory = true as const;
-```
-
-### Using Services with getInjector
-
-Use `getInjector` to obtain a namespaced injector that returns proxies for
-accessing units:
-
-```ts
-// user/userService.ts
-import { getInjector } from "wiremap";
-import type { Defs } from "../app.ts";
-
-const inj = getInjector<Defs>()("@user.service");
-
-export function getUser(id: string) {
-  const db = inj().db;
-  return db.users.find((user) => user.id === id);
-}
-
-export function addUser(name: string, email: string) {
-  // Access other units in the same block with dot notation
-  const getUserByEmail = inj(".").getUserByEmail;
-
-  if (getUserByEmail(email)) {
-    throw new Error("User already exists");
-  }
-
-  const db = inj().db;
-  const user = { id: crypto.randomUUID(), name, email };
-  db.users.push(user);
-  return user.id;
-}
-```
-
-### Blocks and Namespaces
-
-Organize related units using `createBlock` to create hierarchical namespaces:
-
-```ts
-// user/userMod.ts
-import { createBlock } from "wiremap";
-import * as userService from "./userService.ts";
-
-export default createBlock("@user", {
-  ...createBlock("service", userService),
-});
-```
 
 ### Dependency Resolution
 
@@ -139,134 +124,6 @@ const inj2 = getInjector<Defs>()("@post.service");
 const getUser = inj2("@user.service").getUser; // Access user service from post service
 ```
 
-## 🎯 Complete Example
-
-Here's a practical example showing user and post management:
-
-```ts
-// db.ts
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-}
-
-export interface Post {
-  id: string;
-  userId: string;
-  title: string;
-  content: string;
-}
-
-export const db = {
-  users: [] as User[],
-  posts: [] as Post[],
-};
-
-// user/userService.ts
-import { getInjector } from "wiremap";
-import type { Defs } from "../app.ts";
-
-const inj = getInjector<Defs>()("@user.service");
-
-export function getUser(id: string) {
-  const db = inj("#").db;
-  return db.users.find((user) => user.id === id);
-}
-
-export function getUserByEmail(email: string) {
-  const db = inj().db;
-  return db.users.find((user) => user.email === email);
-}
-
-export function addUser(name: string, email: string, isAdmin = false) {
-  const getUserByEmail = inj(".").getUserByEmail;
-  const existingUser = getUserByEmail(email);
-
-  if (existingUser) {
-    throw new Error(`User with email ${email} already exists`);
-  }
-
-  const user = { id: crypto.randomUUID(), name, email, isAdmin };
-  inj().db.users.push(user);
-  return user.id;
-}
-
-export function getUsers() {
-  return inj().db.users;
-}
-
-// post/postService.ts
-import { getInjector } from "wiremap";
-import type { Defs } from "../app.ts";
-
-const inj = getInjector<Defs>()("@post.service");
-
-export function addPost(title: string, content: string, userId: string) {
-  const getUser = inj("@user.service").getUser;
-  const user = getUser(userId);
-
-  if (!user) {
-    throw new Error(`User with id ${userId} does not exist`);
-  }
-
-  const db = inj().db;
-  const post = { id: crypto.randomUUID(), title, content, userId };
-  db.posts.push(post);
-  return post.id;
-}
-
-export function getPost(id: string) {
-  const db = inj().db;
-  return db.posts.find((post) => post.id === id);
-}
-
-export function getPosts() {
-  return inj().db.posts;
-}
-
-// user/userMod.ts
-import { createBlock } from "wiremap";
-import * as userService from "./userService.ts";
-
-export default createBlock("@user", {
-  ...createBlock("service", userService),
-});
-
-// post/postMod.ts
-import { createBlock } from "wiremap";
-import * as postService from "./postService.ts";
-
-export default createBlock("@post", {
-  ...createBlock("service", postService),
-});
-
-// app.ts
-import { wireApp } from "wiremap";
-import { db } from "./db.ts";
-import userMod from "./user/userMod.ts";
-import postMod from "./post/postMod.ts";
-
-const defs = {
-  db,
-  ...userMod,
-  ...postMod,
-};
-
-export type Defs = typeof defs;
-export const app = wireApp(defs);
-
-// Usage
-const addUser = app("@user.service").addUser;
-const userId = addUser("John Doe", "john@example.com");
-
-const addPost = app("@post.service").addPost;
-const postId = addPost("Hello World", "This is my first post!", userId);
-
-const posts = app("@post.service").getPosts();
-console.log(posts); // [{ id: "...", title: "Hello World", ... }]
-```
 
 ## 🧪 Testing
 
