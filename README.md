@@ -32,10 +32,6 @@ To declare a function as a factory, add the `isFactory` flag:
 - If the factory returns a **promise**, add `isAsync: true`  
 - If the function is declared with `async`, no flag is needed — it’s auto-detected  
 
-If **any** unit is an async factory, `wireApp` will return a **Promise**.
-
-Units can be defined directly at the root or within namespaced blocks.
-
 Example:
 
 ```ts
@@ -78,8 +74,6 @@ export default createBlock('userModule', {
 ### App
 
 To wire an app, pass an object containing all your units and blocks to `wireApp`.
-
-To enable type inference across files, export the type of your definitions object.
 
 If any unit is an async factory, `wireApp` will return a Promise.
 
