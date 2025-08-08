@@ -1,35 +1,42 @@
 # Wiremap
 
-**Wiremap** is a lightweight, type-safe dependency injection framework for
-TypeScript that favours composition over inheritance. Build scalable,
-maintainable, and testable applications with intuitive dependency management.
+**Wiremap** is a lightweight, type-safe dependency injection framework for **TypeScript** that favors composition over inheritance. Build scalable, maintainable, and testable applications with intuitive and powerful dependency management.
 
 ## ✨ Features
 
-- **🔒 Type-Safe**: Full TypeScript support without manual type injection
-- **🧱 Compositional**: Build complex applications from simple, reusable units
-- **♻️ Without Circular Dependencies**: Eliminates circular dependencies by
-  design
-- **🤯 No decorators, no classes**, no gorillas, no jungles. Just the bananas
-- **🌲 Hierarchical**: Organize dependencies with namespaces and blocks
-- **🧪 Testable**: Built-in testing utilities for easy mocking and isolation
-- **🪶 Lightweight**: Minimal runtime overhead with smart caching
-- **🔌 Zero Configuration**: Just install and import
-- **🔨 Simple API**: So simple, it hurts.
-
+- **🔒 Type-Safe**: Full TypeScript support without manual type annotations  
+- **🧱 Compositional**: Compose complex applications from small, reusable units  
+- **♻️ Circular Dependency-Free**: Designed to eliminate circular dependencies  
+- **🤯 No decorators, no classes**, no gorillas, no jungles — just the bananas  
+- **🌲 Hierarchical**: Organize dependencies using namespaces and blocks  
+- **🧪 Testable**: Built-in utilities for easy mocking and isolated testing  
+- **🪶 Lightweight**: Minimal runtime overhead with smart, built-in caching  
+- **🔌 Zero Configuration**: Just install and import — no setup needed  
+- **🔨 Simple API**: So simple, it hurts  
 
 ## 📚 Core Concepts
 
-Wiremap apps are conformed by units arranged in hierarchical blocks.
+Wiremap applications are composed of **units** organized into **hierarchical blocks**.
 
 ### Units
 
-Units can be any type of value, and can be injected individually or in block proxies into another units.
-Units are resolved and cached on demand.
-Units can be plain values or the result of a factory function. To declare a function as a factory function add the `isFactory` property as `true` to it. If the factory returns a promise it will also require the `isAsync` prop as `true` to work properly. Pure async factories don't need that flag as the JS runtime can detect the function is async. Having any async factory in your app will make the `wireApp` method to return a promise.
-Units can be wired directly to the root of the app or through namespaced blocks
+Units can be any kind of value and can be injected individually or via block proxies into other units. They're resolved and cached on demand.
 
-To define a unit, just declare it and export it:
+A unit can be:
+
+- A plain value  
+- The result of a factory function  
+
+To declare a function as a factory, add the `isFactory` flag:
+
+- If the factory returns a **promise**, add `isAsync: true`  
+- If the function is declared with `async`, no flag is needed — it’s auto-detected  
+
+If **any** unit is an async factory, `wireApp` will return a **Promise**.
+
+Units can be defined directly at the root or within namespaced blocks.
+
+Example:
 
 ```ts
 export const config = {
@@ -41,14 +48,13 @@ export function ping () {
 }
 
 export function queryUser () {
-  const db = getDbConnector()
+  const db = getDbConnector();
 
   return function (id: string) {
-    return db.users.find(id)
-  }
+    return db.users.find(id);
+  };
 }
 queryUser.isFactory = true as const;
-```
 
 ### Blocks
 
@@ -68,34 +74,85 @@ export default createBlock('userModule', {
 })
 ```
 
-### App
+### Blocks
 
-Wiring an app requires an object containing all the units and blocks definitions. This definitions objects type has to be exported to be able to infer the types from injectors in another files.
-Wiring a definitions object will return the injector of the root of the app, unless any unit is an async factory, a promise containing the root injector will be returned.
+Blocks are groups of units (or other blocks). Use createBlock to create one, then compose it into other blocks or your app’s root definition.
+
 
 ```ts
-import { wireApp } from 'wiremap'
+// userModule.ts
+import { createBlock } from 'wiremap';
 
-import userModule from './userModule'
+import * as userService from './userService';
+import * as userRepo from './userRepo';
+
+export default createBlock('userModule', {
+  ...createBlock('service', userService),
+  ...createBlock('repo', userRepo),
+});
+```
+
+### App
+
+To wire an app, pass an object containing all your units and blocks to `wireApp`.
+
+To enable type inference across files, export the type of your definitions object.
+
+If any unit is an async factory, `wireApp` will return a Promise.
+
+```ts
+import { wireApp } from 'wiremap';
+
+import userModule from './userModule';
 
 const units = {
   config: { port: 3000 },
   ...userModule
-}
-export type Units = typeof units
+};
+export type Units = typeof units;
 
-const appInjector = wireApp(units)
+const appInjector = wireApp(units);
 
-const root = appInjector()
-console.log(`App running on port ${root.config.port}`)
+const root = appInjector();
+console.log(`App running on port ${root.config.port}`);
 
-const getUser = appInjector('userModule.service').getUser
+const getUser = appInjector('userModule.service').getUser;
 ```
 
 
 ### Injectors
 
-TODO
+Wiremap injectors are strongly typed functions that let you access your units.
+
+You can use injectors in three main ways:
+
+- Root Injector: Access top-level units or blocks.
+- Scoped Injector: Created from any unit path; accesses relative or nested dependencies.
+- Path Resolution:
+  - "." resolves to the current block
+  - "some.path" resolves absolutely
+  - passing nothing resolves to root
+
+Example:
+
+```ts
+// app.ts
+import { getInjector } from "wiremap";
+import type { Units } from "./app";
+
+const serviceInjector = getInjector<Units>()("userModule.service");
+
+// access units from same block
+const getUser = serviceInjector(".").getUser;
+// access units from root-level
+const configAgain = serviceInjector().config; 
+// access units from another block
+const postArticle = serviceInjector('postModule.service').postArticle;
+```
+
+
+Wiring an app will return the root level injector
+
 
 
 ## 📦 Installation
@@ -105,32 +162,17 @@ npm install wiremap
 ```
 
 
-
-### Dependency Resolution
-
-Wiremap supports multiple resolution patterns:
-
-```ts
-// Absolute resolution - access any unit by full path
-const user = app("@user.service").getUser;
-
-// Relative resolution - access units within the same block
-const inj = getInjector<Defs>()("@user.service");
-const getUserByEmail = inj(".").getUserByEmail; // Resolves to @user.service.getUserByEmail
-const db = inj().db; // Resolves to root-level db
-
-// Cross-block resolution
-const inj2 = getInjector<Defs>()("@post.service");
-const getUser = inj2("@user.service").getUser; // Access user service from post service
-```
-
-
 ## 🧪 Testing
 
 Wiremap includes powerful testing utilities for isolated unit testing:
 
+### Testing Utilities
+
+- **`mockInjection(fn, fakeUnits)`**: Mocks a function with fake dependencies
+- **`mockFactory(fn, fakeUnits)`**: Mocks a factory function with fake
+  dependencies
+
 ```ts
-import { assertEquals } from "@std/assert";
 import { mockInjection } from "wiremap";
 import type { Post, User } from "../db.ts";
 import {
@@ -138,34 +180,25 @@ import {
   getUsers as getUsersUnit,
 } from "./userService.ts";
 
-Deno.test("user service - add user", () => {
-  const db = { users: [] as User[], posts: [] as Post[] };
+const fakeUnits = {
+  "@user.service.getUserByEmail": (email: string) => {
+    return db.users.find((user) => user.email === email);
+  },
+  db: { users: [] as User[], posts: [] as Post[] },
+};
 
-  const fakeUnits = {
-    db,
-    "@user.service.getUserByEmail": (email: string) => {
-      return db.users.find((user) => user.email === email);
-    },
-  };
+const getUsers = mockInjection(getUsersUnit, fakeUnits);
+let users = getUsers();
+assertEquals(users.length, 0);
 
-  const getUsers = mockInjection(getUsersUnit, fakeUnits);
-  let users = getUsers();
-  assertEquals(users.length, 0);
+const addUser = mockInjection(addUserUnit, fakeUnits);
+addUser("John", "john@example.com", true);
 
-  const addUser = mockInjection(addUserUnit, fakeUnits);
-  addUser("John", "john@example.com", true);
-
-  users = getUsers();
-  assertEquals(users.length, 1);
-  assertEquals(users[0].name, "John");
-});
+users = getUsers();
+assertEquals(users.length, 1);
+assertEquals(users[0].name, "John");
 ```
 
-### Testing Utilities
-
-- **`mockInjection(fn, fakeUnits)`**: Mocks a function with fake dependencies
-- **`mockFactory(fn, fakeUnits)`**: Mocks a factory function with fake
-  dependencies
 
 ## 🤝 Contributing
 
