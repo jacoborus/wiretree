@@ -19,6 +19,34 @@ Deno.test("wireApp resolves dependencies", () => {
   assertEquals(app("@nested").subKey, "subValue");
 });
 
+Deno.test(
+  "wireApp resolves async factories that return a promise",
+  async () => {
+    function factoryFn() {
+      const theKey = inj().key;
+      return new Promise((resolve) => {
+        resolve(theKey);
+      });
+    }
+    factoryFn.isFactory = true as const;
+    factoryFn.isAsync = true as const;
+
+    const defs = {
+      key: "value",
+      "@nested.subKey": "subValue",
+      factoryFn,
+    };
+    // @ts-ignore: it's just for the internal test
+    const inj = getInjector<typeof defs>()();
+
+    const app = await wireApp(defs);
+
+    assertEquals(app().key, "value");
+    assertEquals(app("@nested").subKey, "subValue");
+    assertEquals(app(".").factoryFn, "value");
+  },
+);
+
 Deno.test("block creates namespaced definitions", () => {
   wireApp({});
   const blockInstance = createBlock("namespace", {

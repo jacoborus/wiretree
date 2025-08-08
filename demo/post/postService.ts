@@ -26,6 +26,9 @@ export function addPost(title: string, content: string, userId: string) {
 
 export function collection() {
   const db = inj().db;
-  return db.posts;
+  return new Promise<typeof db.posts>((resolve) => {
+    resolve(db.posts);
+  });
 }
-collection.factory = true as const;
+collection.isFactory = true as const;
+collection.isAsync = true as const;

@@ -10,15 +10,36 @@ export function getInjector<L extends List>() {
   };
 }
 
-export function wireApp<Defs extends List>(
-  defs: Defs,
-): BlockInjector<Defs, ""> {
+type WiredApp<Defs extends List> =
+  HasAsync<Defs> extends true
+    ? Promise<BlockInjector<Defs, "">>
+    : BlockInjector<Defs, "">;
+
+export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
   mainDefs = defs;
   mainCache = {};
   proxiesCache = new Map();
   publicKeys = getPublicKeys(defs);
   takenInjectors = new Set<string>();
-  return createInjector<Defs, "">("");
+  const injector = createInjector<Defs, "">("");
+
+  const asyncKeys = listAsyncKeys(defs);
+  if (asyncKeys.length) {
+    return resolveAsync(asyncKeys).then(() => injector) as WiredApp<Defs>;
+  }
+
+  return injector as WiredApp<Defs>;
+}
+
+async function resolveAsync<L extends List>(asyncKeys: string[]) {
+  const defs = mainDefs as L;
+  for await (const key of asyncKeys) {
+    const unit = defs[key];
+    if (unit.isFactory === true && isAsync(unit)) {
+      const result = await unit();
+      mainCache[key as keyof typeof mainCache] = result;
+    }
+  }
 }
 
 function createInjector<Defs extends List, P extends string>(
@@ -113,6 +134,12 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
         const finalKey = namespace === "" ? prop : `${namespace}.${prop}`;
 
         if (unitKeys.includes(finalKey)) {
+          if (finalKey in mainCache) {
+            const cachedValue = mainCache[finalKey];
+            cachedblock[prop] = cachedValue;
+            return cachedValue as ProxyValue;
+          }
+
           const def = mainDefs[finalKey];
 
           if (isFactory(def)) {
@@ -190,8 +217,37 @@ export function mockFactory<D extends Func, L extends List>(
 
 function isFactory<T>(unit: () => T): unit is Factory<T> {
   return (
-    typeof unit === "function" && "factory" in unit && unit.factory === true
+    typeof unit === "function" && "isFactory" in unit && unit.isFactory === true
   );
+}
+
+function isAsync<T>(fnOrValue: T) {
+  if (
+    typeof fnOrValue === "function" &&
+    "isAsync" in fnOrValue &&
+    fnOrValue.isAsync === true
+  ) {
+    return true;
+  }
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+  return (
+    fnOrValue instanceof Promise ||
+    (typeof fnOrValue === "function" && fnOrValue instanceof AsyncFunction)
+  );
+}
+
+function listAsyncKeys(list: List): string[] {
+  const result: string[] = [];
+  for (const key in list) {
+    if (Object.prototype.hasOwnProperty.call(list, key)) {
+      const value = list[key];
+      if (isAsync(value)) {
+        result.push(key);
+      }
+    }
+  }
+  return result;
 }
 
 // =======
@@ -200,19 +256,17 @@ type List = Record<string, any>;
 
 interface Factory<T> {
   (...args: unknown[]): T;
-  factory: true;
+  isFactory: true;
 }
 
 type InferUnitValue<D> =
-  D extends Factory<infer T>
-    ? T //
-    : D;
+  D extends Factory<infer T> ? (T extends Promise<infer V> ? V : T) : D;
 
 type Func = (...args: any[]) => any;
 
 type BlockInjector<L extends List, P extends string> = {
   (): BlockProxy<L, P, "">;
-  <K extends "." | "" | BlockKeys<L>>(key?: K): BlockProxy<L, P, K>;
+  <K extends "." | BlockKeys<L>>(key?: K): BlockProxy<L, P, K>;
 };
 
 type BlockProxy<
@@ -222,7 +276,7 @@ type BlockProxy<
 > = N extends "."
   ? {
       [K in UnitKeys<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
-    } //
+    }
   : N extends ""
     ? {
         [K in UnitKeys<L, "">]: InferUnitValue<L[K]>;
@@ -257,3 +311,15 @@ type BlockKey<K extends string> =
 type BlockKeys<L extends List> = {
   [K in keyof L]: BlockKey<Extract<K, string>>;
 }[keyof L];
+
+type IsAsync<T> = T extends (...args: any[]) => Promise<any>
+  ? true
+  : T extends Promise<unknown>
+    ? true
+    : false;
+
+type HasAsync<T extends Record<string, unknown>> = true extends {
+  [K in keyof T]: IsAsync<T[K]>;
+}[keyof T]
+  ? true
+  : false;
