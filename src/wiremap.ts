@@ -2,7 +2,7 @@ let mainDefs: List = {};
 let mainCache: List = {};
 let takenInjectors = new Set<string>();
 let publicKeys: string[] = [];
-let proxiesCache: Map<string, unknown> = new Map();
+let proxiesCache = new Map<string, unknown>();
 
 export function createInjector<L extends List>() {
   return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
@@ -37,7 +37,7 @@ async function resolveAsync<L extends List>(
   const defs = mainDefs as L;
   for await (const key of asyncKeys) {
     const unit = defs[key];
-    if (unit.isFactory === true && isAsync(unit)) {
+    if (unit.isFactory === true && isAsyncFactory(unit)) {
       const result = await unit();
       mainCache[key as keyof typeof mainCache] = result;
     }
@@ -233,9 +233,11 @@ function isFactory<T>(unit: () => T): unit is Factory<T> {
   );
 }
 
-function isAsync<T>(fnOrValue: T): boolean {
+function isAsyncFactory<T>(fnOrValue: T): boolean {
   if (
     typeof fnOrValue === "function" &&
+    "isFactory" in fnOrValue &&
+    fnOrValue.isFactory === true &&
     "isAsync" in fnOrValue &&
     fnOrValue.isAsync === true
   ) {
@@ -254,7 +256,7 @@ function listAsyncKeys(list: List): string[] {
   for (const key in list) {
     if (Object.prototype.hasOwnProperty.call(list, key)) {
       const value = list[key];
-      if (isAsync(value)) {
+      if (isAsyncFactory(value)) {
         result.push(key);
       }
     }
@@ -276,10 +278,10 @@ type InferUnitValue<D> =
 
 type Func = (...args: any[]) => any;
 
-type BlockInjector<L extends List, P extends string> = {
+interface BlockInjector<L extends List, P extends string> {
   (): BlockProxy<L, P, "">;
   <K extends "." | BlockKeys<L>>(key?: K): BlockProxy<L, P, K>;
-};
+}
 
 type BlockProxy<
   L extends List,
@@ -324,14 +326,16 @@ type BlockKeys<L extends List> = {
   [K in keyof L]: BlockKey<Extract<K, string>>;
 }[keyof L];
 
-type IsAsync<T> = T extends (...args: unknown[]) => Promise<unknown>
-  ? true
-  : T extends Promise<unknown>
+type IsAsyncFactory<T> = T extends { isFactory: true }
+  ? T extends (...args: unknown[]) => Promise<unknown>
     ? true
-    : false;
+    : T extends Promise<unknown>
+      ? true
+      : false
+  : false;
 
 type HasAsync<T extends Record<string, unknown>> = true extends {
-  [K in keyof T]: IsAsync<T[K]>;
+  [K in keyof T]: IsAsyncFactory<T[K]>;
 }[keyof T]
   ? true
   : false;
