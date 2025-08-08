@@ -31,7 +31,9 @@ export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
   return injector as WiredApp<Defs>;
 }
 
-async function resolveAsync<L extends List>(asyncKeys: string[]) {
+async function resolveAsync<L extends List>(
+  asyncKeys: string[],
+): Promise<void> {
   const defs = mainDefs as L;
   for await (const key of asyncKeys) {
     const unit = defs[key];
@@ -231,7 +233,7 @@ function isFactory<T>(unit: () => T): unit is Factory<T> {
   );
 }
 
-function isAsync<T>(fnOrValue: T) {
+function isAsync<T>(fnOrValue: T): boolean {
   if (
     typeof fnOrValue === "function" &&
     "isAsync" in fnOrValue &&
