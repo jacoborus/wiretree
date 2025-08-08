@@ -2,6 +2,13 @@
 
 **Wiremap** is a lightweight, type-safe dependency injection framework for **TypeScript** that favors composition over inheritance. Build scalable, maintainable, and testable applications with intuitive and powerful dependency management.
 
+---
+
+:fire: **HEADS UP!** You're currently looking at an alpha version.
+API might change
+
+---
+
 ## ✨ Features
 
 - **🔒 Type-Safe**: Full TypeScript support without manual type annotations  
@@ -108,12 +115,12 @@ You can use injectors in three main ways:
 - Path Resolution:
   - "." resolves to the current block
   - "some.path" resolves absolutely
-  - passing nothing resolves to root
+  - passing nothing resolves to root level
 
 Example:
 
 ```ts
-// app.ts
+// userService.ts
 import { getInjector } from "wiremap";
 import type { Units } from "./app";
 
