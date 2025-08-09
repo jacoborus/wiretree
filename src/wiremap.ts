@@ -70,28 +70,25 @@ function generateInjector<Defs extends List, P extends string>(
     }
 
     const k = String(key);
+
+    let proxy;
+
     if (k === ".") {
-      const proxy = createBlockProxy(parent) as unknown as ThisProxy;
-      localCache["."] = proxy;
-      proxiesCache.set(parent, proxy);
-      return proxy;
+      // local block resolution, exposes private units
+      proxy = createBlockProxy(parent) as unknown as ThisProxy;
+    } else if (k === "") {
+      // root block resolution
+      proxy = createBlockProxy("") as ThisProxy;
+    } else if (publicKeys.includes(k)) {
+      // external block resolution, uses absolute path of the block
+      proxy = createBlockProxy(k) as ThisProxy;
+    } else {
+      throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
     }
 
-    if (k === "") {
-      const proxy = createBlockProxy("") as ThisProxy;
-      localCache[""] = proxy;
-      proxiesCache.set("", proxy);
-      return proxy;
-    }
-
-    if (publicKeys.includes(k)) {
-      const proxy = createBlockProxy(k) as ThisProxy;
-      localCache[k] = proxy;
-      proxiesCache.set(k, proxy);
-      return proxy;
-    }
-
-    throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
+    localCache[k] = proxy;
+    proxiesCache.set(k, proxy);
+    return proxy;
   }
 
   return blockInjector;
