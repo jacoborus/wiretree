@@ -75,13 +75,13 @@ function generateInjector<Defs extends List, P extends string>(
 
     if (k === ".") {
       // local block resolution, exposes private units
-      proxy = createBlockProxy(parent) as unknown as ThisProxy;
+      proxy = createBlockProxy(parent, parent) as unknown as ThisProxy;
     } else if (k === "") {
       // root block resolution
-      proxy = createBlockProxy("") as ThisProxy;
+      proxy = createBlockProxy(parent, "") as ThisProxy;
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(k) as ThisProxy;
+      proxy = createBlockProxy(parent, k) as ThisProxy;
     } else {
       throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
     }
@@ -105,19 +105,37 @@ function getBlockPaths<L extends List>(defs: L): BlockPaths<L>[] {
     });
 }
 
+function getBlockUnitPaths<P extends string, N extends string>(
+  parent: P,
+  namespace: N,
+) {
+  if (namespace === "") {
+    return Object.keys(unitDefinitions).filter(
+      (key) => key.split(".").length === 1,
+    );
+  }
+
+  if ((namespace as string) === parent) {
+    return Object.keys(unitDefinitions).filter(
+      (key) =>
+        key.startsWith(`${namespace}.`) &&
+        key.slice(namespace.length + 1).split(".").length === 1,
+    );
+  }
+
+  return Object.keys(unitDefinitions).filter(
+    (key) =>
+      key.startsWith(`${namespace}.`) &&
+      key.slice(namespace.length + 1).split(".").length === 1 &&
+      unitDefinitions[key].isPrivate !== true,
+  );
+}
+
 function createBlockProxy<L extends List, P extends string, N extends string>(
+  parent: P,
   namespace: N,
 ): BlockProxy<L, P, N> {
-  const unitKeys =
-    namespace === ""
-      ? Object.keys(unitDefinitions).filter(
-          (key) => key.split(".").length === 1,
-        )
-      : Object.keys(unitDefinitions).filter(
-          (key) =>
-            key.startsWith(`${namespace}.`) &&
-            key.slice(namespace.length + 1).split(".").length === 1,
-        );
+  const unitKeys = getBlockUnitPaths(parent, namespace);
 
   return new Proxy(
     {}, // used as a cache for the block
@@ -157,7 +175,7 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
         }
 
         throw new Error(
-          `Key ${String(prop)} not found in block "${namespace}"`,
+          `Key "${String(prop)}" not found in block "${namespace}"`,
         );
       },
 
@@ -275,7 +293,19 @@ function isAsyncFactory<T>(unit: T): boolean {
   return unit instanceof AsyncFunction;
 }
 
+function isPrivate(unit: unknown): unit is PrivateUnit {
+  if (unit === null) return false;
+  if (typeof unit === "object" || isFunction(unit) || isPromise(unit)) {
+    return "isPrivate" in unit && unit.isPrivate === true;
+  }
+  return false;
+}
+
 // =======
+
+interface PrivateUnit {
+  isPrivate: true;
+}
 
 type List = Record<string, any>;
 

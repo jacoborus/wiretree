@@ -141,3 +141,60 @@ Deno.test("mockFactory", () => {
 
   assertEquals(getUser("email").email, "email");
 });
+
+Deno.test("wireApp protects private units", () => {
+  const injA = createInjector<Defs>()("A");
+  const injB = createInjector<Defs>()("B");
+
+  function priv() {
+    return "private";
+  }
+  priv.isPrivate = true as const;
+
+  function pub() {
+    const f = injA(".").priv;
+    return f();
+  }
+
+  function other() {
+    const f = injB("A").priv;
+    return f();
+  }
+
+  const defs = {
+    "A.priv": priv,
+    "A.pub": pub,
+    "B.other": other,
+  };
+  type Defs = typeof defs;
+
+  wireApp(defs);
+
+  assertEquals(
+    injA("A").priv(),
+    "private",
+    "Private props are accesible from same block injector",
+  );
+  assertEquals(
+    injA("A").pub(),
+    "private",
+    "Private props are accesible from other units of same block",
+  );
+
+  let passed = false;
+
+  try {
+    injB("B").other();
+    passed = true;
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      assertEquals(e.message, 'Key "priv" not found in block "A"');
+    }
+  }
+
+  assertEquals(
+    passed,
+    false,
+    "Private units should not be accessible from other blocks",
+  );
+});
