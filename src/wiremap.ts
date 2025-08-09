@@ -141,15 +141,16 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
 
           const def = mainDefs[finalKey];
 
+          let value;
+
           if (isFactory(def)) {
-            const value = def();
-            cachedblock[prop] = value;
-            mainCache[finalKey] = value;
-            return value as ProxyValue;
+            value = def();
+          } else {
+            value = def;
           }
 
-          cachedblock[prop] = def;
-          mainCache[finalKey] = def;
+          cachedblock[prop] = value;
+          mainCache[finalKey] = value;
           return def as ProxyValue;
         }
 
@@ -157,9 +158,11 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
           `Key ${String(prop)} not found in block "${namespace}"`,
         );
       },
+
       ownKeys() {
         return unitKeys;
       },
+
       getOwnPropertyDescriptor() {
         return {
           enumerable: true,
