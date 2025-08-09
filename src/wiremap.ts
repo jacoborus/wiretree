@@ -127,7 +127,7 @@ function getBlockUnitPaths<P extends string, N extends string>(
     (key) =>
       key.startsWith(`${namespace}.`) &&
       key.slice(namespace.length + 1).split(".").length === 1 &&
-      unitDefinitions[key].isPrivate !== true,
+      !isPrivate(unitDefinitions[key]),
   );
 }
 
@@ -295,7 +295,7 @@ function isAsyncFactory<T>(unit: T): boolean {
 
 function isPrivate(unit: unknown): unit is PrivateUnit {
   if (unit === null) return false;
-  if (typeof unit === "object" || isFunction(unit) || isPromise(unit)) {
+  if (isFunction(unit) || isPromise(unit)) {
     return "isPrivate" in unit && unit.isPrivate === true;
   }
   return false;
@@ -304,6 +304,7 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
 // =======
 
 interface PrivateUnit {
+  (...args: any[]): any;
   isPrivate: true;
 }
 
@@ -330,23 +331,23 @@ type BlockProxy<
   N extends string,
 > = N extends "."
   ? {
-      [K in UnitKeys<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
+      [K in BlockUnitNames<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
     }
   : N extends ""
     ? {
-        [K in UnitKeys<L, "">]: InferUnitValue<L[K]>;
+        [K in BlockUnitNames<L, "">]: InferUnitValue<L[K]>;
       }
     : N extends P
       ? {
-          [K in UnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
+          [K in BlockUnitNames<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
         }
       : {
-          [K in PublicUnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
+          [K in PublicBlockUnitNames<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
         };
 
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
-type UnitKeys<L extends List, N extends string> = {
+type BlockUnitNames<L extends List, N extends string> = {
   [K in keyof L]: N extends ""
     ? K extends NoDots<infer UnitName>
       ? UnitName
@@ -356,7 +357,7 @@ type UnitKeys<L extends List, N extends string> = {
       : never;
 }[keyof L];
 
-type PublicUnitKeys<L extends List, N extends string> = {
+type PublicBlockUnitNames<L extends List, N extends string> = {
   [K in keyof L]: K extends `${N}.${NoDots<infer UnitName>}` //
     ? L[K] extends { isPrivate: true }
       ? never
