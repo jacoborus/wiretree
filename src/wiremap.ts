@@ -1,7 +1,7 @@
-let mainDefs: List = {};
-let mainCache: List = {};
-let takenInjectors = new Set<string>();
-let publicKeys: string[] = [];
+let unitDefinitions: List = {};
+let unitCache: List = {};
+let takenInjectorsKeys = new Set<string>();
+let blockPaths: string[] = [];
 let proxiesCache = new Map<string, unknown>();
 
 export function createInjector<L extends List>() {
@@ -16,11 +16,11 @@ type WiredApp<Defs extends List> =
     : BlockInjector<Defs, "">;
 
 export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
-  mainDefs = defs;
-  mainCache = {};
+  unitDefinitions = defs;
+  unitCache = {};
   proxiesCache = new Map();
-  publicKeys = getPublicKeys(defs);
-  takenInjectors = new Set<string>();
+  blockPaths = getBlockPaths(defs);
+  takenInjectorsKeys = new Set<string>();
   const injector = generateInjector<Defs, "">("");
 
   const asyncKeys = listAsyncKeys(defs);
@@ -34,12 +34,12 @@ export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
 async function resolveAsync<L extends List>(
   asyncKeys: string[],
 ): Promise<void> {
-  const defs = mainDefs as L;
+  const defs = unitDefinitions as L;
   for await (const key of asyncKeys) {
     const unit = defs[key];
     if (unit.isFactory === true && isAsyncFactory(unit)) {
       const result = await unit();
-      mainCache[key as keyof typeof mainCache] = result;
+      unitCache[key as keyof typeof unitCache] = result;
     }
   }
 }
@@ -47,12 +47,12 @@ async function resolveAsync<L extends List>(
 function generateInjector<Defs extends List, P extends string>(
   parent: P,
 ): BlockInjector<Defs, P> {
-  if (takenInjectors.has(parent)) {
+  if (takenInjectorsKeys.has(parent)) {
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
   const localCache: Record<string, unknown> = {};
-  takenInjectors.add(parent);
+  takenInjectorsKeys.add(parent);
 
   function blockInjector(): BlockProxy<Defs, P, "">;
   function blockInjector<K extends "." | BlockKeys<Defs>>(
@@ -79,7 +79,7 @@ function generateInjector<Defs extends List, P extends string>(
     } else if (k === "") {
       // root block resolution
       proxy = createBlockProxy("") as ThisProxy;
-    } else if (publicKeys.includes(k)) {
+    } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
       proxy = createBlockProxy(k) as ThisProxy;
     } else {
@@ -94,7 +94,7 @@ function generateInjector<Defs extends List, P extends string>(
   return blockInjector;
 }
 
-function getPublicKeys<L extends List>(defs: L): BlockKeys<L>[] {
+function getBlockPaths<L extends List>(defs: L): BlockKeys<L>[] {
   return Object.keys(defs)
     .filter((key) => key.split(".").length > 1)
     .map((key) => {
@@ -110,8 +110,10 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
 ): BlockProxy<L, P, N> {
   const unitKeys =
     namespace === ""
-      ? Object.keys(mainDefs).filter((key) => key.split(".").length === 1)
-      : Object.keys(mainDefs).filter(
+      ? Object.keys(unitDefinitions).filter(
+          (key) => key.split(".").length === 1,
+        )
+      : Object.keys(unitDefinitions).filter(
           (key) =>
             key.startsWith(`${namespace}.`) &&
             key.slice(namespace.length + 1).split(".").length === 1,
@@ -133,13 +135,13 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
         const finalKey = namespace === "" ? prop : `${namespace}.${prop}`;
 
         if (unitKeys.includes(finalKey)) {
-          if (finalKey in mainCache) {
-            const cachedValue = mainCache[finalKey];
+          if (finalKey in unitCache) {
+            const cachedValue = unitCache[finalKey];
             cachedblock[prop] = cachedValue;
             return cachedValue as ProxyValue;
           }
 
-          const def = mainDefs[finalKey];
+          const def = unitDefinitions[finalKey];
 
           let value;
 
@@ -150,7 +152,7 @@ function createBlockProxy<L extends List, P extends string, N extends string>(
           }
 
           cachedblock[prop] = value;
-          mainCache[finalKey] = value;
+          unitCache[finalKey] = value;
           return def as ProxyValue;
         }
 
@@ -196,15 +198,15 @@ export function mockInjection<D extends Func, L extends List>(
   units: L,
 ): D {
   return function () {
-    const oldPublicKeys = publicKeys;
-    publicKeys = getPublicKeys(units);
-    const oldMainCache = mainCache;
-    const oldMainDefs = mainDefs;
-    mainDefs = units;
+    const oldPublicKeys = blockPaths;
+    blockPaths = getBlockPaths(units);
+    const oldMainCache = unitCache;
+    const oldMainDefs = unitDefinitions;
+    unitDefinitions = units;
     const result = unit(...arguments);
-    mainCache = oldMainCache;
-    mainDefs = oldMainDefs;
-    publicKeys = oldPublicKeys;
+    unitCache = oldMainCache;
+    unitDefinitions = oldMainDefs;
+    blockPaths = oldPublicKeys;
     return result;
   } as D;
 }
@@ -214,15 +216,15 @@ export function mockFactory<D extends Func, L extends List>(
   units: L,
 ): ReturnType<D> {
   return function () {
-    const oldPublicKeys = publicKeys;
-    publicKeys = getPublicKeys(units);
-    const oldMainCache = mainCache;
-    const oldMainDefs = mainDefs;
-    mainDefs = units;
+    const oldPublicKeys = blockPaths;
+    blockPaths = getBlockPaths(units);
+    const oldMainCache = unitCache;
+    const oldMainDefs = unitDefinitions;
+    unitDefinitions = units;
     const result = unit()(...arguments);
-    mainCache = oldMainCache;
-    mainDefs = oldMainDefs;
-    publicKeys = oldPublicKeys;
+    unitCache = oldMainCache;
+    unitDefinitions = oldMainDefs;
+    blockPaths = oldPublicKeys;
     return result;
   } as ReturnType<D>;
 }
