@@ -5,7 +5,7 @@ let blockPaths: string[] = [];
 let proxiesCache = new Map<string, unknown>();
 
 export function createInjector<L extends List>() {
-  return function <N extends BlockKeys<L>>(namespace: N): BlockInjector<L, N> {
+  return function <N extends BlockPaths<L>>(namespace: N): BlockInjector<L, N> {
     return generateInjector<L, N>(namespace);
   };
 }
@@ -37,9 +37,8 @@ async function resolveAsync<L extends List>(
   const defs = unitDefinitions as L;
   for await (const key of asyncKeys) {
     const unit = defs[key];
-    if (unit.isFactory === true && isAsyncFactory(unit)) {
-      const result = await unit();
-      unitCache[key as keyof typeof unitCache] = result;
+    if (isAsyncFactory(unit)) {
+      unitCache[key] = await unit();
     }
   }
 }
@@ -55,10 +54,10 @@ function generateInjector<Defs extends List, P extends string>(
   takenInjectorsKeys.add(parent);
 
   function blockInjector(): BlockProxy<Defs, P, "">;
-  function blockInjector<K extends "." | BlockKeys<Defs>>(
+  function blockInjector<K extends "." | BlockPaths<Defs>>(
     blockKey: K,
   ): BlockProxy<Defs, P, K>;
-  function blockInjector<K extends "." | BlockKeys<Defs>>(
+  function blockInjector<K extends "." | BlockPaths<Defs>>(
     blockKey?: K,
   ): BlockProxy<Defs, P, K extends undefined ? "" : K> {
     const key = (blockKey ?? "") as K extends undefined ? "" : K;
@@ -94,14 +93,14 @@ function generateInjector<Defs extends List, P extends string>(
   return blockInjector;
 }
 
-function getBlockPaths<L extends List>(defs: L): BlockKeys<L>[] {
+function getBlockPaths<L extends List>(defs: L): BlockPaths<L>[] {
   return Object.keys(defs)
     .filter((key) => key.split(".").length > 1)
     .map((key) => {
       const parts = key.split(".");
       return parts
         .slice(0, parts.length - 1)
-        .join(".") as BlockKeys<L>[][number];
+        .join(".") as BlockPaths<L>[][number];
     });
 }
 
@@ -229,30 +228,6 @@ export function mockFactory<D extends Func, L extends List>(
   } as ReturnType<D>;
 }
 
-function isFactory<T>(unit: () => T): unit is Factory<T> {
-  return (
-    typeof unit === "function" && "isFactory" in unit && unit.isFactory === true
-  );
-}
-
-function isAsyncFactory<T>(fnOrValue: T): boolean {
-  if (
-    typeof fnOrValue === "function" &&
-    "isFactory" in fnOrValue &&
-    fnOrValue.isFactory === true &&
-    "isAsync" in fnOrValue &&
-    fnOrValue.isAsync === true
-  ) {
-    return true;
-  }
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-
-  return (
-    fnOrValue instanceof Promise ||
-    (typeof fnOrValue === "function" && fnOrValue instanceof AsyncFunction)
-  );
-}
-
 function listAsyncKeys(list: List): string[] {
   const result: string[] = [];
   for (const key in list) {
@@ -264,6 +239,38 @@ function listAsyncKeys(list: List): string[] {
     }
   }
   return result;
+}
+
+function isPromise<T>(value: unknown): value is Promise<T> {
+  return (
+    value instanceof Promise ||
+    (typeof value === "object" &&
+      value !== null &&
+      "then" in value &&
+      typeof value.then == "function")
+  );
+}
+
+function isFunction<T>(unit: unknown): unit is () => T {
+  return typeof unit === "function";
+}
+
+function isFactory<T>(unit: unknown): unit is Factory<T> {
+  if (!isFunction(unit) && !isPromise(unit)) {
+    return false;
+  }
+
+  return "isFactory" in unit && unit.isFactory === true;
+}
+
+function isAsyncFactory<T>(unit: T): boolean {
+  if (!isFactory(unit)) return false;
+  if (isPromise(unit)) return true;
+  if (!isFunction(unit)) return false;
+  if ("isAsync" in unit && unit.isAsync === true) return true;
+
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  return unit instanceof AsyncFunction;
 }
 
 // =======
@@ -282,7 +289,7 @@ type Func = (...args: any[]) => any;
 
 interface BlockInjector<L extends List, P extends string> {
   (): BlockProxy<L, P, "">;
-  <K extends "." | BlockKeys<L>>(key?: K): BlockProxy<L, P, K>;
+  <K extends "." | BlockPaths<L>>(key?: K): BlockProxy<L, P, K>;
 }
 
 type BlockProxy<
@@ -319,13 +326,13 @@ type ParentKey<T extends string> = T extends `${infer S}.${infer C}`
     : `${S}.${ParentKey<C>}`
   : never;
 
-type BlockKey<K extends string> =
+type ExtractBlockPath<K extends string> =
   K extends NoDots<K>
     ? never // unit in root
     : ParentKey<K>; // block name
 
-type BlockKeys<L extends List> = {
-  [K in keyof L]: BlockKey<Extract<K, string>>;
+type BlockPaths<L extends List> = {
+  [K in keyof L]: ExtractBlockPath<Extract<K, string>>;
 }[keyof L];
 
 type IsAsyncFactory<T> = T extends { isFactory: true }
