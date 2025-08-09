@@ -81,7 +81,7 @@ function generateInjector<Defs extends List, P extends string>(
       proxy = createBlockProxy(parent, "") as ThisProxy;
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(parent, k) as ThisProxy;
+      proxy = createBlockProxy(parent, k) as unknown as ThisProxy;
     } else {
       throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
     }
@@ -336,9 +336,13 @@ type BlockProxy<
     ? {
         [K in UnitKeys<L, "">]: InferUnitValue<L[K]>;
       }
-    : {
-        [K in UnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
-      };
+    : N extends P
+      ? {
+          [K in UnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
+        }
+      : {
+          [K in PublicUnitKeys<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
+        };
 
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
@@ -350,6 +354,14 @@ type UnitKeys<L extends List, N extends string> = {
     : K extends `${N}.${NoDots<infer UnitName>}`
       ? UnitName
       : never;
+}[keyof L];
+
+type PublicUnitKeys<L extends List, N extends string> = {
+  [K in keyof L]: K extends `${N}.${NoDots<infer UnitName>}` //
+    ? L[K] extends { isPrivate: true }
+      ? never
+      : UnitName //
+    : never;
 }[keyof L];
 
 type ParentKey<T extends string> = T extends `${infer S}.${infer C}`

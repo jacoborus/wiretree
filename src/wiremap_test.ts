@@ -30,6 +30,9 @@ Deno.test("wireApp resolves dependencies", () => {
 Deno.test(
   "wireApp resolves async factories that return a promise",
   async () => {
+    // @ts-ignore: this is just for the internal test
+    const inj = createInjector<typeof defs>()();
+
     function factoryFn() {
       const theKey = inj().key;
       return new Promise((resolve) => {
@@ -44,8 +47,6 @@ Deno.test(
       "@nested.subKey": "subValue",
       factoryFn,
     };
-    // @ts-ignore: it's just for the internal test
-    const inj = createInjector<typeof defs>()();
 
     const app = await wireApp(defs);
 
@@ -157,6 +158,7 @@ Deno.test("wireApp protects private units", () => {
   }
 
   function other() {
+    // @ts-ignore: this is just for the internal test
     const f = injB("A").priv;
     return f();
   }
@@ -168,7 +170,7 @@ Deno.test("wireApp protects private units", () => {
   };
   type Defs = typeof defs;
 
-  wireApp(defs);
+  const rootInjector = wireApp(defs);
 
   assertEquals(
     injA("A").priv(),
@@ -181,11 +183,11 @@ Deno.test("wireApp protects private units", () => {
     "Private props are accesible from other units of same block",
   );
 
-  let passed = false;
+  let passedFromBlockInjector = false;
 
   try {
     injB("B").other();
-    passed = true;
+    passedFromBlockInjector = true;
   } catch (e: unknown) {
     if (e instanceof Error) {
       assertEquals(e.message, 'Key "priv" not found in block "A"');
@@ -193,8 +195,26 @@ Deno.test("wireApp protects private units", () => {
   }
 
   assertEquals(
-    passed,
+    passedFromBlockInjector,
     false,
     "Private units should not be accessible from other blocks",
+  );
+
+  let passedFromRootInjector = false;
+
+  try {
+    // @ts-ignore: it's just for the internal test
+    rootInjector("A").priv;
+    passedFromRootInjector = true;
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      assertEquals(e.message, 'Key "priv" not found in block "A"');
+    }
+  }
+
+  assertEquals(
+    passedFromRootInjector,
+    false,
+    "Private units should not be accessible from root injector",
   );
 });
