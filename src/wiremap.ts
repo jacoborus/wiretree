@@ -24,22 +24,23 @@ export function wireApp<Defs extends List>(defs: Defs): WiredApp<Defs> {
   const injector = generateInjector<Defs, "">("");
 
   const asyncKeys = listAsyncKeys(defs);
-  if (asyncKeys.length) {
-    return resolveAsync(asyncKeys).then(() => injector) as WiredApp<Defs>;
+  if (!asyncKeys.length) {
+    return injector as WiredApp<Defs>;
   }
 
-  return injector as WiredApp<Defs>;
+  return resolveAsyncFactories(asyncKeys).then(
+    () => injector,
+  ) as WiredApp<Defs>;
 }
 
-async function resolveAsync<L extends List>(
+async function resolveAsyncFactories<L extends List>(
   asyncKeys: string[],
 ): Promise<void> {
   const defs = unitDefinitions as L;
+
   for await (const key of asyncKeys) {
-    const unit = defs[key];
-    if (isAsyncFactory(unit)) {
-      unitCache[key] = await unit();
-    }
+    const unitDef = defs[key];
+    unitCache[key] = await unitDef();
   }
 }
 
@@ -230,6 +231,7 @@ export function mockFactory<D extends Func, L extends List>(
 
 function listAsyncKeys(list: List): string[] {
   const result: string[] = [];
+
   for (const key in list) {
     if (Object.prototype.hasOwnProperty.call(list, key)) {
       const value = list[key];
