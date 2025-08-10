@@ -1,4 +1,4 @@
-type Hashmap = Record<string, any>;
+type Hashmap = Record<string, unknown>;
 
 let unitDefinitions: Hashmap = {};
 let unitCache: Hashmap = {};
@@ -11,7 +11,7 @@ type WiredApp<Defs extends Hashmap> =
     ? Promise<BlockInjector<Defs, "">>
     : BlockInjector<Defs, "">;
 
-type HasAsync<T extends Record<string, unknown>> = true extends {
+type HasAsync<T extends Hashmap> = true extends {
   [K in keyof T]: IsAsyncFactory<T[K]>;
 }[keyof T]
   ? true
@@ -66,7 +66,7 @@ function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
     });
 }
 
-function hasAsyncKeys(list: List): boolean {
+function hasAsyncKeys(list: Hashmap): boolean {
   return Object.keys(list).some((key) => isAsyncFactory(list[key]));
 }
 
@@ -96,7 +96,7 @@ export function createBlock<L extends Hashmap, Prefix extends string>(
   name: Prefix,
   units: L,
 ): Namespaced<Prefix, L> {
-  const result: Record<string, unknown> = {};
+  const result: Hashmap = {};
   for (const key in units) {
     if (Object.prototype.hasOwnProperty.call(units, key)) {
       result[`${name}.${key}`] = units[key];
@@ -128,7 +128,7 @@ function generateInjector<Defs extends Hashmap, P extends string>(
     throw new Error(`Injector for "${parent}" is already in use.`);
   }
 
-  const localCache: Record<string, unknown> = {};
+  const localCache: Hashmap = {};
   takenInjectorsKeys.add(parent);
 
   function blockInjector(): BlockProxy<Defs, P, "">;
@@ -180,6 +180,7 @@ function generateInjector<Defs extends Hashmap, P extends string>(
  *   a: 1,
  *   "b.c": 2,
  *   "b.d": 3,
+ *   "b.e.other": 3,
  * }, "b">
  */
 type BlockUnitNames<L extends Hashmap, N extends string> = {
@@ -245,10 +246,7 @@ function createBlockProxy<
   return new Proxy(
     {}, // used as a cache for the block
     {
-      get: <K extends string>(
-        cachedblock: Record<string, unknown>,
-        prop: K,
-      ) => {
+      get: <K extends string>(cachedblock: Hashmap, prop: K) => {
         type ProxyValue = InferUnitValue<N extends "" ? L[K] : L[`${N}.${K}`]>;
 
         if (prop in cachedblock) {
