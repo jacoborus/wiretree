@@ -337,7 +337,7 @@ function isPromise<T>(value: unknown): value is Promise<T> {
   );
 }
 
-type Func = (...args: any[]) => any;
+type Func = (...args: unknown[]) => unknown;
 
 function isFunction<T>(unit: unknown): unit is () => T {
   return typeof unit === "function";
@@ -376,8 +376,7 @@ function isAsyncFactory<T>(unit: T): boolean {
   return unit instanceof AsyncFunction;
 }
 
-interface PrivateUnit {
-  (...args: any[]): any;
+interface PrivateUnit extends Func {
   isPrivate: true;
 }
 
@@ -400,13 +399,13 @@ export function mockInjection<D extends Func, L extends Hashmap>(
   unit: D,
   units: L,
 ): D {
-  return function () {
+  return function (...args: unknown[]) {
     const oldPublicKeys = blockPaths;
     blockPaths = getBlockPaths(units);
     const oldMainCache = unitCache;
     const oldMainDefs = unitDefinitions;
     unitDefinitions = units;
-    const result = unit(...arguments);
+    const result = unit(...args);
     unitCache = oldMainCache;
     unitDefinitions = oldMainDefs;
     blockPaths = oldPublicKeys;
@@ -425,13 +424,13 @@ export function mockFactory<D extends Func, L extends Hashmap>(
   unit: D,
   units: L,
 ): ReturnType<D> {
-  return function () {
+  return function (...args: unknown[]) {
     const oldPublicKeys = blockPaths;
     blockPaths = getBlockPaths(units);
     const oldMainCache = unitCache;
     const oldMainDefs = unitDefinitions;
     unitDefinitions = units;
-    const result = unit()(...arguments);
+    const result = (unit() as Func)(...args);
     unitCache = oldMainCache;
     unitDefinitions = oldMainDefs;
     blockPaths = oldPublicKeys;
