@@ -3,8 +3,7 @@
   "version": "1.0.0-alpha.1",
   "description": "Compositional dependency injection framework.",
   "exports": {
-    ".": "./src/wiremap.ts",
-    "./testing": "./src/testing_util.ts"
+    ".": "./src/wiremap.ts"
   },
   "publish": {
     "include": [
