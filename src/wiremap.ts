@@ -368,7 +368,9 @@ function isAsyncFactory<T>(unit: T): boolean {
   if (!isFunction(unit)) return false;
   if ("isAsync" in unit && unit.isAsync === true) return true;
 
-  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const AsyncFunction = Object.getPrototypeOf(async function () {
+    /* nope */
+  }).constructor;
   return unit instanceof AsyncFunction;
 }
 
