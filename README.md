@@ -1,11 +1,11 @@
 # Wiremap
 
-**Wiremap** is a lightweight, type-safe dependency injection framework for **TypeScript** that favors composition over inheritance. Build scalable, maintainable, and testable applications with intuitive and powerful dependency management.
+**Wiremap** is a lightweight, type-safe dependency injection framework for TypeScript that favors composition over inheritance. Build scalable, maintainable, and testable applications with intuitive and powerful dependency management.
 
 ---
 
-:fire: **HEADS UP!** You're currently looking at an alpha version.
-API might change
+⚠️ **PRE-RELEASE SOFTWARE** 
+This is an alpha version under active development. The API is subject to change.  
 
 ---
 
@@ -20,6 +20,44 @@ API might change
 - **🪶 Lightweight**: Minimal runtime overhead with smart, built-in caching  
 - **🔌 Zero Configuration**: Just install and import, no setup needed  
 - **🔨 Simple API**: So simple, it hurts  
+
+
+## 📦 Installation
+
+```bash
+# choose your platform
+npm install wiremap
+pnpm add wiremap
+deno add jsr:@jacobo/wiremap
+bun add wiremap
+```
+
+
+## 🚀 Basic Example
+
+```ts
+import { wireApp, createBlock } from './src/wiremap.ts';
+
+// Define your units
+const units = {
+  config: { port: 3000, host: 'localhost' },
+  ...createBlock('database', {
+    connection: () => ({ url: 'mongodb://localhost' }),
+    users: [] as User[]
+  })
+};
+
+// Wire the application
+const app = wireApp(units);
+
+// Access your dependencies
+const root = app();
+console.log(`Server: ${root.config.host}:${root.config.port}`);
+
+const db = app('database');
+console.log('DB URL:', db.connection.url);
+```
+
 
 ## 📚 Core Concepts
 
@@ -42,14 +80,25 @@ To declare a function as a factory, add the `isFactory` flag:
 Example:
 
 ```ts
+// plain value
 export const config = {
   port: 3000
 }
 
+// plain function 
 export function ping () {
   return 'pong';
 }
 
+// plain function with injection
+export async function addPost (entry: Entry) {
+  const authorize = inject('auth.service').authorize
+  const postRepo = inject('.').repo
+  await authorize(entry.author)
+  await postRepo.insert(entry)
+}
+
+// factory function
 export function queryUser () {
   const db = getDbConnector();
 
@@ -62,7 +111,7 @@ queryUser.isFactory = true as const;
 
 ### Blocks
 
-Blocks are groups of units (or other blocks). Use createBlock to create one, then compose it into other blocks or your app’s root definition.
+Blocks are groups of units and other blocks. Use createBlock to create one, then compose it into other blocks or your app’s root definition by destructuring its result.
 
 
 ```ts
@@ -100,7 +149,8 @@ const appInjector = wireApp(units);
 const root = appInjector();
 console.log(`App running on port ${root.config.port}`);
 
-const getUser = appInjector('userModule.service').getUser;
+const userService = appInjector('user.service');
+const getUser = userService.getUser;
 ```
 
 
@@ -110,21 +160,18 @@ Wiremap injectors are strongly typed functions that let you access your units.
 
 You can use injectors in three main ways:
 
-- Root Injector: Access top-level units or blocks.
-- Scoped Injector: Created from any unit path; accesses relative or nested dependencies.
-- Path Resolution:
-  - "." resolves to the current block
-  - "some.path" resolves absolutely
-  - passing nothing resolves to root level
+- Root injector: Access top-level units by passing nothing to `createInjector`
+- Local injector: Access units from the same block by passing `"."`  to `createInjector`
+- Scoped Injector: Resolves a block absolutely with full block path `"some.block.path"`
 
 Example:
 
 ```ts
 // userService.ts
-import { getInjector } from "wiremap";
+import { createInjector } from "wiremap";
 import type { Units } from "./app";
 
-const serviceInjector = getInjector<Units>()("userModule.service");
+const serviceInjector = createInjector<Units>()("userModule.service");
 
 // access units from same block
 const getUser = serviceInjector(".").getUser;
@@ -134,16 +181,7 @@ const configAgain = serviceInjector().config;
 const postArticle = serviceInjector('postModule.service').postArticle;
 ```
 
-
 Wiring an app will return the root level injector
-
-
-
-## 📦 Installation
-
-```bash
-npm install wiremap
-```
 
 
 ## 🧪 Testing
@@ -186,7 +224,10 @@ assertEquals(users[0].name, "John");
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome!
+
+**💬 Questions or Feedback?**  
+Open an issue on [GitHub](https://github.com/jacoborus/wiremap/issues)
 
 ## 📄 License
 
