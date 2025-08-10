@@ -21,7 +21,7 @@ type HasAsync<T extends Hashmap> = true extends {
  * Wires up a dependency injection application from unit definitions.
  *
  * @param defs - Object containing unit definitions, where keys are unit names and values are factories or values
- * @returns Promise<BlockInjector> if async units exist, otherwise BlockInjector for synchronous access
+ * @returns Promise<BlockInjector> if async factory units exist, otherwise BlockInjector for synchronous resolution
  */
 export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   unitDefinitions = defs;
@@ -38,21 +38,39 @@ export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   return resolveAsyncFactories().then(() => injector) as WiredApp<Defs>;
 }
 
+/**
+ * Extract the paths of the blocks of a hashmap
+ *
+ * This will return "b" | "b.e":
+ *
+ * BlockPaths<{
+ *   a: 1,
+ *   "b.c": 2,
+ *   "b.d": 3,
+ *   "b.e.other": 3,
+ * }>
+ */
 type BlockPaths<L extends Hashmap> = {
   [K in keyof L]: ExtractBlockPath<Extract<K, string>>;
 }[keyof L];
 
+// Extract keys with no dots in them
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
-type ExtractBlockPath<K extends string> =
-  K extends NoDots<K>
-    ? never // unit in root
-    : ParentKey<K>; // block name
-
-type ParentKey<T extends string> = T extends `${infer S}.${infer C}`
+/**
+ * Extracts the path of a block from a unit path.
+ * Returns never if the path does not contain dots.
+ *
+ * Example:
+ *
+ * ExtractBlockPath<"a.b.c.d">; // "a.b.c"
+ * ExtractBlockPath<"a.b.d">; // "a.b"
+ * ExtractBlockPath<"a">; // never
+ */
+type ExtractBlockPath<T extends string> = T extends `${infer S}.${infer C}`
   ? C extends NoDots<C>
     ? S
-    : `${S}.${ParentKey<C>}`
+    : `${S}.${ExtractBlockPath<C>}`
   : never;
 
 function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
