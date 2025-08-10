@@ -114,12 +114,13 @@ Deno.test("mockInjection", () => {
   };
 
   const injector = createInjector<typeof fakeUnits>()("@test.service");
-
-  const getUser = mockInjection((email: string) => {
+  const getUserDefinition = (email: string) => {
     // const getByEmail = injector(".").getByEmail;
     const getByEmail = injector("@test.service").getByEmail;
     return getByEmail(email);
-  }, fakeUnits);
+  };
+
+  const getUser = mockInjection(getUserDefinition, fakeUnits);
 
   assertEquals(getUser("email").email, "email");
 });

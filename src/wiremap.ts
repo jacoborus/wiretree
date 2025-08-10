@@ -426,17 +426,20 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
  * @param units - Mock units to replace the real dependencies during test execution
  * @returns The original function with mocked dependencies injected
  */
-export function mockInjection<D extends Func, L extends Hashmap>(
-  unit: D,
-  units: L,
-): D {
+export function mockInjection<D, L extends Hashmap>(unit: D, units: L): D {
+  if (!isFunction(unit)) {
+    throw new Error("The unit to be mocked must be a function");
+  }
+
   return function (...args: unknown[]) {
     const oldPublicKeys = blockPaths;
     blockPaths = getBlockPaths(units);
     const oldMainCache = unitCache;
     const oldMainDefs = unitDefinitions;
     unitDefinitions = units;
-    const result = unit(...args);
+    // this weird cast is needed to make TypeScript happy
+    const u = unit as Func;
+    const result = u(...args);
     unitCache = oldMainCache;
     unitDefinitions = oldMainDefs;
     blockPaths = oldPublicKeys;
