@@ -31,11 +31,13 @@ export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   takenInjectorsKeys = new Set<string>();
   const injector = generateInjector<Defs, "">("");
 
-  if (!hasAsyncKeys(defs)) {
-    return injector as WiredApp<Defs>;
+  if (hasAsyncKeys(defs)) {
+    // This will cause wireApp to return a promise that resolves
+    // when all async factories are resolved
+    return resolveAsyncFactories().then(() => injector) as WiredApp<Defs>;
   }
 
-  return resolveAsyncFactories().then(() => injector) as WiredApp<Defs>;
+  return injector as WiredApp<Defs>;
 }
 
 /**
@@ -54,7 +56,7 @@ type BlockPaths<L extends Hashmap> = {
   [K in keyof L]: ExtractBlockPath<Extract<K, string>>;
 }[keyof L];
 
-// Extract keys with no dots in them
+/** Extract keys with no dots in them */
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
 /**
@@ -73,6 +75,7 @@ type ExtractBlockPath<T extends string> = T extends `${infer S}.${infer C}`
     : `${S}.${ExtractBlockPath<C>}`
   : never;
 
+/** Extracts the paths of blocks from a hashmap of definitions into an array */
 function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
   return Object.keys(defs)
     .filter((key) => key.split(".").length > 1)
@@ -84,6 +87,7 @@ function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
     });
 }
 
+/** Check if any of the definitions are async factories */
 function hasAsyncKeys(list: Hashmap): boolean {
   return Object.keys(list).some((key) => isAsyncFactory(list[key]));
 }
@@ -99,7 +103,8 @@ async function resolveAsyncFactories(): Promise<void> {
   }
 }
 
-type Namespaced<N extends string, L extends Hashmap> = {
+/** Add a prefix to all keys of a hashmap. */
+type PrefixedHashmap<N extends string, L extends Hashmap> = {
   [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
 };
 
@@ -113,14 +118,14 @@ type Namespaced<N extends string, L extends Hashmap> = {
 export function createBlock<L extends Hashmap, Prefix extends string>(
   name: Prefix,
   units: L,
-): Namespaced<Prefix, L> {
+): PrefixedHashmap<Prefix, L> {
   const result: Hashmap = {};
   for (const key in units) {
     if (Object.prototype.hasOwnProperty.call(units, key)) {
       result[`${name}.${key}`] = units[key];
     }
   }
-  return result as Namespaced<Prefix, L>;
+  return result as PrefixedHashmap<Prefix, L>;
 }
 
 interface BlockInjector<L extends Hashmap, P extends string> {
@@ -286,13 +291,7 @@ function createBlockProxy<
 
           const def = unitDefinitions[finalKey];
 
-          let value;
-
-          if (isFactory(def)) {
-            value = def();
-          } else {
-            value = def;
-          }
+          const value = isFactory(def) ? def() : def;
 
           cachedblock[prop] = value;
           unitCache[finalKey] = value;
@@ -310,15 +309,29 @@ function createBlockProxy<
 
       getOwnPropertyDescriptor() {
         return {
-          enumerable: true,
-          configurable: true,
           writable: false,
+          enumerable: true,
+          // this is required to allow the proxy to be enumerable
+          configurable: true,
         };
       },
     },
   ) as BlockProxy<L, P, N>;
 }
 
+/**
+ * Extracts the paths of the units of a block.
+ *
+ * Example:
+ * This returns ["b.c", "b.d", "b.e.other"]
+ *
+ * getBlockUnitPaths("b",
+ *   a: 1,
+ *   "b.c": 2,
+ *   "b.d": 3,
+ *   "b.e.other": 3,
+ * })
+ */
 function getBlockUnitPaths<P extends string, N extends string>(
   parent: P,
   namespace: N,
