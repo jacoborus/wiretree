@@ -31,14 +31,11 @@ export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   takenInjectorsKeys = new Set<string>();
   const injector = generateInjector<Defs, "">("");
 
-  const asyncKeys = listAsyncKeys(defs);
-  if (!asyncKeys.length) {
+  if (!hasAsyncKeys(defs)) {
     return injector as WiredApp<Defs>;
   }
 
-  return resolveAsyncFactories(asyncKeys).then(
-    () => injector,
-  ) as WiredApp<Defs>;
+  return resolveAsyncFactories().then(() => injector) as WiredApp<Defs>;
 }
 
 type BlockPaths<L extends Hashmap> = {
@@ -69,28 +66,18 @@ function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
     });
 }
 
-function listAsyncKeys(list: Hashmap): string[] {
-  const result: string[] = [];
-
-  for (const key in list) {
-    if (Object.prototype.hasOwnProperty.call(list, key)) {
-      const value = list[key];
-      if (isAsyncFactory(value)) {
-        result.push(key);
-      }
-    }
-  }
-  return result;
+function hasAsyncKeys(list: List): boolean {
+  return Object.keys(list).some((key) => isAsyncFactory(list[key]));
 }
 
-async function resolveAsyncFactories<L extends Hashmap>(
-  asyncKeys: string[],
-): Promise<void> {
-  const defs = unitDefinitions as L;
+async function resolveAsyncFactories(): Promise<void> {
+  const keys = Object.keys(unitDefinitions);
 
-  for await (const key of asyncKeys) {
-    const unitDef = defs[key];
-    unitCache[key] = await unitDef();
+  for await (const key of keys) {
+    const unitDef = unitDefinitions[key];
+    if ((isFunction(unitDef) || isPromise(unitDef)) && isFactory(unitDef)) {
+      unitCache[key] = await unitDef();
+    }
   }
 }
 
