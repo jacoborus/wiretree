@@ -17,6 +17,12 @@ type HasAsync<T extends Record<string, unknown>> = true extends {
   ? true
   : false;
 
+/**
+ * Wires up a dependency injection application from unit definitions.
+ *
+ * @param defs - Object containing unit definitions, where keys are unit names and values are factories or values
+ * @returns Promise<BlockInjector> if async units exist, otherwise BlockInjector for synchronous access
+ */
 export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   unitDefinitions = defs;
   unitCache = {};
@@ -92,6 +98,13 @@ type Namespaced<N extends string, L extends Hashmap> = {
   [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
 };
 
+/**
+ * Creates a namespaced block of units with a common prefix.
+ *
+ * @param name - The namespace prefix for all units in the block
+ * @param units - Object containing unit definitions to be namespaced
+ * @returns Object with all units prefixed with the namespace
+ */
 export function createBlock<L extends Hashmap, Prefix extends string>(
   name: Prefix,
   units: L,
@@ -110,6 +123,11 @@ interface BlockInjector<L extends Hashmap, P extends string> {
   <K extends "." | BlockPaths<L>>(key?: K): BlockProxy<L, P, K>;
 }
 
+/**
+ * Creates an injector factory function for accessing units within specific namespaces.
+ *
+ * @returns Function that takes a namespace and returns a BlockInjector for that namespace
+ */
 export function createInjector<L extends Hashmap>() {
   return function <N extends BlockPaths<L>>(namespace: N): BlockInjector<L, N> {
     return generateInjector<L, N>(namespace);
@@ -380,6 +398,13 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
   return false;
 }
 
+/**
+ * Mocks dependency injection for testing by temporarily replacing units with test doubles.
+ *
+ * @param unit - The function to be tested that uses dependency injection
+ * @param units - Mock units to replace the real dependencies during test execution
+ * @returns The original function with mocked dependencies injected
+ */
 export function mockInjection<D extends Func, L extends Hashmap>(
   unit: D,
   units: L,
@@ -398,6 +423,13 @@ export function mockInjection<D extends Func, L extends Hashmap>(
   } as D;
 }
 
+/**
+ * Mocks dependency injection for testing factory functions by replacing units with test doubles.
+ *
+ * @param unit - The factory function to be tested that returns a function using dependency injection
+ * @param units - Mock units to replace the real dependencies during test execution
+ * @returns The result of calling the factory function with mocked dependencies
+ */
 export function mockFactory<D extends Func, L extends Hashmap>(
   unit: D,
   units: L,
