@@ -110,12 +110,16 @@ interface BlockInjector<L extends Hashmap, P extends string> {
   <K extends "." | BlockPaths<L>>(key?: K): BlockProxy<L, P, K>;
 }
 
+type InjectorFactory<L extends Hashmap> = <N extends BlockPaths<L>>(
+  namespace: N,
+) => BlockInjector<L, N>;
+
 /**
  * Creates an injector factory function for accessing units within specific namespaces.
  *
  * @returns Function that takes a namespace and returns a BlockInjector for that namespace
  */
-export function createInjector<L extends Hashmap>() {
+export function createInjector<L extends Hashmap>(): InjectorFactory<L> {
   return function <N extends BlockPaths<L>>(namespace: N): BlockInjector<L, N> {
     return generateInjector<L, N>(namespace);
   };
