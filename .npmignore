@@ -3,5 +3,5 @@ node_modules/
 deno.json
 deno.lock
 package-lock.json
-demo
+demo/
 src/wiremap_test.ts
