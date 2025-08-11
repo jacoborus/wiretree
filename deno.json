@@ -1,6 +1,7 @@
 {
-  "name": "@jacoborus/wiremap",
+  "name": "@jacobo/wiremap",
   "version": "1.0.0-alpha.1",
+  "license": "MIT",
   "description": "Compositional dependency injection framework.",
   "exports": "./src/wiremap.ts",
   "publish": {
