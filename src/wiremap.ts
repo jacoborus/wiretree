@@ -22,6 +22,26 @@ type HasAsync<T extends Hashmap> = true extends {
  *
  * @param defs - Object containing unit definitions, where keys are unit names and values are factories or values
  * @returns Promise<BlockInjector> if async factory units exist, otherwise BlockInjector for synchronous resolution
+ * @example
+ * // Define your units
+ * const units = {
+ *   config: { port: 3000, host: "localhost" },
+ *   ...createBlock("database", {
+ *     connection: () => ({ url: "mongodb://localhost" }),
+ *     users: [],
+ *   }),
+ * };
+ *
+ * // Wire the application
+ * const app = wireApp(units);
+ *
+ * // Access units at root level
+ * const root = app();
+ * console.log(root.config.port); // 3000
+ *
+ * // Access units inside a block
+ * const db = app("database");
+ * console.log(db.connection.url); // "mongodb://localhost"
  */
 export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   unitDefinitions = defs;
@@ -114,6 +134,18 @@ type PrefixedHashmap<N extends string, L extends Hashmap> = {
  * @param name - The namespace prefix for all units in the block
  * @param units - Object containing unit definitions to be namespaced
  * @returns Object with all units prefixed with the namespace
+ * @example
+ * // userModule.ts
+ * import { createBlock } from "wiremap";
+ * import * as userService from "./userService";
+ * import * as userRepo from "./userRepo";
+ *
+ * export default createBlock("user", {
+ *   ...createBlock("service", userService),
+ *   ...createBlock("repo", userRepo),
+ * });
+ *
+ * // Resulting keys: "user.service.someService", "user.repo.someRepo"
  */
 export function createBlock<L extends Hashmap, Prefix extends string>(
   name: Prefix,
@@ -141,6 +173,20 @@ type InjectorFactory<L extends Hashmap> = <N extends BlockPaths<L>>(
  * Creates an injector factory function for accessing units within specific namespaces.
  *
  * @returns Function that takes a namespace and returns a BlockInjector for that namespace
+ * @example
+ * import { createInjector } from "wiremap";
+ * import type { Units } from "./app";
+ *
+ * const serviceInjector = createInjector<Units>()("user.service");
+ *
+ * // Access units from the same block
+ * const getUser = serviceInjector(".").getUser;
+ *
+ * // Access units from root-level
+ * const config = serviceInjector().config;
+ *
+ * // Access units from another block
+ * const postArticle = serviceInjector("post.service").postArticle;
  */
 export function createInjector<L extends Hashmap>(): InjectorFactory<L> {
   return function <N extends BlockPaths<L>>(namespace: N): BlockInjector<L, N> {
@@ -425,6 +471,18 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
  * @param unit - The function to be tested that uses dependency injection
  * @param units - Mock units to replace the real dependencies during test execution
  * @returns The original function with mocked dependencies injected
+ * @example
+ * import { mockInjection } from "wiremap";
+ * import { getUsers } from "./userService";
+ *
+ * const fakeUnits = {
+ *   db: { users: [{ id: "1", name: "Test", email: "test@example.com", isAdmin: false }] },
+ *   "user.service.getUserByEmail": (email) => ({ id: "1", name: "Test", email, isAdmin: false }),
+ * };
+ *
+ * const getUsersMock = mockInjection(getUsers, fakeUnits);
+ * const users = getUsersMock();
+ * console.log(users.length); // 1
  */
 export function mockInjection<D, L extends Hashmap>(unit: D, units: L): D {
   if (!isFunction(unit)) {
@@ -453,6 +511,21 @@ export function mockInjection<D, L extends Hashmap>(unit: D, units: L): D {
  * @param unit - The factory function to be tested that returns a function using dependency injection
  * @param units - Mock units to replace the real dependencies during test execution
  * @returns The result of calling the factory function with mocked dependencies
+ * @example
+ * import { mockFactory } from "wiremap";
+ *
+ * const fakeUnits = {
+ *   "user.service.getByEmail": (email) => ({ email }),
+ * };
+ *
+ * const inj = createInjector<typeof fakeUnits>()("user.service");
+ *
+ * const getUser = mockFactory(() => {
+ *   const getByEmail = inj("user.service").getByEmail;
+ *   return (email) => getByEmail(email);
+ * }, fakeUnits);
+ *
+ * console.log(getUser("test@example.com").email); // "test@example.com"
  */
 export function mockFactory<D extends Func, L extends Hashmap>(
   unit: D,
