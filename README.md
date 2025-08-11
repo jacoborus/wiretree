@@ -5,6 +5,7 @@
 ---
 
 ⚠️ **PRE-RELEASE SOFTWARE** 
+
 This is an alpha version under active development. The API is subject to change.  
 
 ---
@@ -25,7 +26,7 @@ This is an alpha version under active development. The API is subject to change.
 ## 📦 Installation
 
 ```bash
-# choose your platform
+# choose your poison
 npm install wiremap
 pnpm add wiremap
 deno add jsr:@jacobo/wiremap
@@ -50,10 +51,11 @@ const units = {
 // Wire the application
 const app = wireApp(units);
 
-// Access your dependencies
+// Access units at root level
 const root = app();
 console.log(`Server: ${root.config.host}:${root.config.port}`);
 
+// Access units inside a block
 const db = app('database');
 console.log('DB URL:', db.connection.url);
 ```
@@ -74,8 +76,22 @@ A unit can be:
 
 To declare a function as a factory, add the `isFactory` flag:
 
-- If the factory returns a **promise**, add `isAsync: true`  
-- If the function is declared with `async`, no flag is needed — it’s auto-detected  
+```ts
+export function doSomething () {
+  // does something
+}
+doSomething.isFactory = true as const;
+```
+
+To be able to resolve async factory functions or the ones that return a promise add the flag `isAsync`:
+
+```ts
+export function doSomething () {
+  // does something
+}
+doSomething.isFactory = true as const;
+doSomething.isFactory = true as const;
+```
 
 Example:
 
