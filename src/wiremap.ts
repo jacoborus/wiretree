@@ -61,16 +61,14 @@ export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
 }
 
 /**
- * Extract the paths of the blocks of a hashmap
- *
- * This will return "b" | "b.e":
+ * Extract the paths of the blocks with units of a hashmap
  *
  * BlockPaths<{
  *   a: 1,
  *   "b.c": 2,
  *   "b.d": 3,
- *   "b.e.other": 3,
- * }>
+ *   "b.e.f.other": 3,
+ * }> // "b" | "b.e.f":
  */
 type BlockPaths<L extends Hashmap> = {
   [K in keyof L]: ExtractBlockPath<Extract<K, string>>;
@@ -82,8 +80,6 @@ type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 /**
  * Extracts the path of a block from a unit path.
  * Returns never if the path does not contain dots.
- *
- * Example:
  *
  * ExtractBlockPath<"a.b.c.d">; // "a.b.c"
  * ExtractBlockPath<"a.b.d">; // "a.b"
@@ -123,9 +119,9 @@ async function resolveAsyncFactories(): Promise<void> {
   }
 }
 
-/** Add a prefix to all keys of a hashmap. */
-type PrefixedHashmap<N extends string, L extends Hashmap> = {
-  [K in keyof L as `${N}.${Extract<K, string>}`]: L[K];
+/** Get the same hashmap `L`, but with all keys prefixed by `P` */
+type PrefixedHashmap<Prefix extends string, H extends Hashmap> = {
+  [K in keyof H as `${Prefix}.${Extract<K, string>}`]: H[K];
 };
 
 /**
@@ -140,12 +136,12 @@ type PrefixedHashmap<N extends string, L extends Hashmap> = {
  * import * as userService from "./userService";
  * import * as userRepo from "./userRepo";
  *
+ * // create and export the user block containing two more blocks:
+ * // user.service and user.repo
  * export default createBlock("user", {
  *   ...createBlock("service", userService),
  *   ...createBlock("repo", userRepo),
  * });
- *
- * // Resulting keys: "user.service.someService", "user.repo.someRepo"
  */
 export function createBlock<L extends Hashmap, Prefix extends string>(
   name: Prefix,
@@ -368,9 +364,8 @@ function createBlockProxy<
 /**
  * Extracts the paths of the units of a block.
  *
- * Example:
- * This returns ["b.c", "b.d", "b.e.other"]
- *
+ * @Example:
+ * This returns ["b.c", "b.d", "b.e.other"]:
  * getBlockUnitPaths("b",
  *   a: 1,
  *   "b.c": 2,
@@ -448,7 +443,7 @@ function isAsyncFactory<T>(unit: T): boolean {
   if ("isAsync" in unit && unit.isAsync === true) return true;
 
   const AsyncFunction = Object.getPrototypeOf(async function () {
-    /* nope */
+    /* not empty anymore */
   }).constructor;
   return unit instanceof AsyncFunction;
 }
