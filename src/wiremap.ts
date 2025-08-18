@@ -4,9 +4,7 @@ type RecordMap = Record<string, Hashmap>;
 type Block<T extends Hashmap> = T & { [blockSymbol]: string };
 
 const blockSymbol = Symbol("BlockSymbol");
-let blockDefinitions: RecordMap = {};
 let unitCache: Hashmap = {};
-let blockPaths: string[] = [];
 let proxiesCache = new Map<string, unknown>();
 
 type WiredApp<Defs extends Hashmap> =
@@ -48,11 +46,12 @@ type HasAsync<T extends Hashmap> = true extends {
  */
 export function wireUp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
   const finalDefinitions = Object.assign(defs, { default: tagBlock("") });
-  blockDefinitions = mapBlocks(finalDefinitions);
+  const blockDefinitions = mapBlocks(finalDefinitions);
   Object.assign(blockDefinitions, mapRoot(defs));
   unitCache = {};
   proxiesCache = new Map();
-  blockPaths = Object.keys(blockDefinitions);
+  feedBlockTags(blockDefinitions);
+  console.log(JSON.stringify(""));
   const injector = generateInjector("", blockDefinitions);
 
   if (hasAsyncKeys(blockDefinitions)) {
@@ -65,30 +64,6 @@ export function wireUp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
 
   return injector as unknown as WiredApp<Defs>;
 }
-
-/**
- * Extract the paths of the blocks with units of a hashmap recursively
- *
- * BlockPaths<{
- *   a: 1,
- *   b: {
- *     c: 2,
- *     d: 3,
- *     e: {
- *       f: {
- *         other: 4
- *       }
- *     }
- *   }
- * }> // "b" | "b.e.f":
- */
-type BlockPaths<T, P extends string = ""> = {
-  [K in keyof T & string]: T[K] extends Record<string, any> // if it's an object
-    ? BlockPaths<T[K], P extends "" ? K : `${P}.${K}`>
-    : P extends ""
-      ? never
-      : P;
-}[keyof T & string];
 
 // type Unpack<T> = {
 //   [K in keyof T]: Unpack<T[K]>;
@@ -174,6 +149,14 @@ function hasAsyncKeys(blockDefs: RecordMap): boolean {
   });
 }
 
+function feedBlockTags(defs: Hashmap): void {
+  const blockPaths = Object.keys(defs);
+  blockPaths.forEach((path) => {
+    const block = defs[path];
+    block.default.feed(defs);
+  });
+}
+
 async function resolveAsyncFactories(defs: RecordMap): Promise<void> {
   const blockKeys = Object.keys(defs);
 
@@ -192,24 +175,25 @@ async function resolveAsyncFactories(defs: RecordMap): Promise<void> {
 }
 
 function itemIsBlock(item: unknown): item is Block<any> {
-  // TODO : refactor this mess
-  if (item === null || typeof item !== "object") return false;
-  if (!("default" in item)) return false;
-  if (!isBlockTag(item.default)) return false;
-  return true;
+  return (
+    item !== null &&
+    typeof item === "object" &&
+    "default" in item &&
+    isBlockTag(item.default)
+  );
 }
 
 interface BlockTag<N extends string> {
   <L extends RecordMap>(): Wire<L>;
   readonly [blockSymbol]: N;
   feed: (defs: RecordMap) => void;
-  isFed: boolean;
 }
 
 export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
   const blockDefs: RecordMap = {};
 
   function f() {
+    console.log(JSON.stringify(namespace));
     return generateInjector(namespace, blockDefs);
   }
 
@@ -220,7 +204,6 @@ export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
     feed(defs: RecordMap) {
       Object.assign(blockDefs, defs);
     },
-    isFed: false,
   };
   return Object.assign(f, o);
 }
@@ -238,9 +221,11 @@ function isBlockTag(thing: unknown): thing is BlockTag<string> {
 }
 
 function generateInjector(localPath: string, blockDefs: RecordMap) {
+  if (!blockDefs) console.trace();
   const localCache: Hashmap = {};
 
   function blockInjector(blockPath?: string) {
+    const blockPaths = Object.keys(blockDefs);
     const key = blockPath ?? "";
 
     if (key in localCache) {
@@ -253,21 +238,13 @@ function generateInjector(localPath: string, blockDefs: RecordMap) {
 
     if (k === ".") {
       // local block resolution, exposes private units
-      proxy = createBlockProxy(
-        blockDefinitions[localPath],
-        true,
-        blockDefinitions,
-      ) as unknown as any;
+      proxy = createBlockProxy(blockDefs[localPath], true) as unknown as any;
     } else if (k === "") {
       // root block resolution
-      proxy = createBlockProxy(blockDefinitions[""], false, blockDefs) as any;
+      proxy = createBlockProxy(blockDefs[""], false) as any;
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(
-        blockDefinitions[k],
-        false,
-        blockDefinitions,
-      ) as unknown as any;
+      proxy = createBlockProxy(blockDefs[k], false) as unknown as any;
     } else {
       throw new Error(`Unit ${k} not found from block "${parent}"`);
     }
@@ -344,14 +321,12 @@ type InferPublicUnitValue<D> = D extends PrivateUnit
       : T
     : D;
 
-function createBlockProxy<B extends Hashmap, Local extends boolean>(
+function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
   blockDef: B,
   local: Local,
-  allDefs: Hashmap,
 ) {
   const unitKeys = getBlockUnitPaths(blockDef, local);
   const blockPath = getBlockTagName(blockDef.default);
-  blockDef.default.feed(allDefs);
 
   return new Proxy(
     {}, // used as a cache for the block
