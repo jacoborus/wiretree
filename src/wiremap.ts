@@ -1,8 +1,11 @@
 type Hashmap = Record<string, unknown>;
+type RecordMap = Record<string, Hashmap>;
 
-let unitDefinitions: Hashmap = {};
+type Block<T extends Hashmap> = T & { [blockSymbol]: string };
+
+const blockSymbol = Symbol("BlockSymbol");
+let blockDefinitions: RecordMap = {};
 let unitCache: Hashmap = {};
-let takenInjectorsKeys = new Set<string>();
 let blockPaths: string[] = [];
 let proxiesCache = new Map<string, unknown>();
 
@@ -33,7 +36,7 @@ type HasAsync<T extends Hashmap> = true extends {
  * };
  *
  * // Wire the application
- * const app = wireApp(units);
+ * const app = wireUp(units);
  *
  * // Access units at root level
  * const root = app();
@@ -43,176 +46,205 @@ type HasAsync<T extends Hashmap> = true extends {
  * const db = app("database");
  * console.log(db.connection.url); // "mongodb://localhost"
  */
-export function wireApp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
-  unitDefinitions = defs;
+export function wireUp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
+  const finalDefinitions = Object.assign(defs, { default: tagBlock("") });
+  blockDefinitions = mapBlocks(finalDefinitions);
+  Object.assign(blockDefinitions, mapRoot(defs));
   unitCache = {};
   proxiesCache = new Map();
-  blockPaths = getBlockPaths(defs);
-  takenInjectorsKeys = new Set<string>();
-  const injector = generateInjector<Defs, "">("");
+  blockPaths = Object.keys(blockDefinitions);
+  const injector = generateInjector("", blockDefinitions);
 
-  if (hasAsyncKeys(defs)) {
-    // This will cause wireApp to return a promise that resolves
+  if (hasAsyncKeys(blockDefinitions)) {
+    // This will cause wireUp to return a promise that resolves
     // when all async factories are resolved
-    return resolveAsyncFactories().then(() => injector) as WiredApp<Defs>;
+    return resolveAsyncFactories(blockDefinitions).then(
+      () => injector,
+    ) as WiredApp<Defs>;
   }
 
-  return injector as WiredApp<Defs>;
+  return injector as unknown as WiredApp<Defs>;
 }
 
 /**
- * Extract the paths of the blocks with units of a hashmap
+ * Extract the paths of the blocks with units of a hashmap recursively
  *
  * BlockPaths<{
  *   a: 1,
- *   "b.c": 2,
- *   "b.d": 3,
- *   "b.e.f.other": 3,
+ *   b: {
+ *     c: 2,
+ *     d: 3,
+ *     e: {
+ *       f: {
+ *         other: 4
+ *       }
+ *     }
+ *   }
  * }> // "b" | "b.e.f":
  */
-type BlockPaths<L extends Hashmap> = {
-  [K in keyof L]: ExtractBlockPath<Extract<K, string>>;
-}[keyof L];
+type BlockPaths<T, P extends string = ""> = {
+  [K in keyof T & string]: T[K] extends Record<string, any> // if it's an object
+    ? BlockPaths<T[K], P extends "" ? K : `${P}.${K}`>
+    : P extends ""
+      ? never
+      : P;
+}[keyof T & string];
+
+// type Unpack<T> = {
+//   [K in keyof T]: Unpack<T[K]>;
+// };
 
 /** Extract keys with no dots in them */
 type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
 
-/**
- * Extracts the path of a block from a unit path.
- * Returns never if the path does not contain dots.
- *
- * ExtractBlockPath<"a.b.c.d">; // "a.b.c"
- * ExtractBlockPath<"a.b.d">; // "a.b"
- * ExtractBlockPath<"a">; // never
- */
-type ExtractBlockPath<T extends string> = T extends `${infer S}.${infer C}`
-  ? C extends NoDots<C>
-    ? S
-    : `${S}.${ExtractBlockPath<C>}`
-  : never;
+function mapBlocks<L extends Hashmap>(
+  blocks: L,
+  prefix?: string,
+): Record<string, Hashmap> {
+  const mapped: Record<string, Hashmap> = {};
 
-/** Extracts the paths of blocks from a hashmap of definitions into an array */
-function getBlockPaths<L extends Hashmap>(defs: L): BlockPaths<L>[] {
-  return Object.keys(defs)
-    .filter((key) => key.split(".").length > 1)
-    .map((key) => {
-      const parts = key.split(".");
-      return parts
-        .slice(0, parts.length - 1)
-        .join(".") as BlockPaths<L>[][number];
-    });
+  Object.keys(blocks).forEach((key) => {
+    const block = blocks[key];
+
+    if (itemIsBlock(block)) {
+      const tagName = getBlockTagName(block.default as BlockTag<string>);
+
+      // this is the key of the block given the path
+      const finalKey = prefix ? `${prefix}.${key}` : key;
+
+      // check if the tag name matches block path
+      if (tagName !== finalKey) {
+        throw new Error(
+          `Block tag "${tagName}" does not match key "${finalKey}".`,
+        );
+      }
+
+      // only blocks with units are injectable
+      if (blockHasUnits(block)) {
+        mapped[tagName] = block;
+      }
+
+      // loop through sub-blocks
+      if (blockHasBlocks(block)) {
+        const subBlocks = mapBlocks(block as Hashmap, finalKey);
+        Object.assign(mapped, subBlocks);
+      }
+    }
+  });
+
+  return mapped;
+}
+
+function mapRoot<L extends Hashmap>(blocks: L): Record<string, Hashmap> {
+  const mapped: Record<string, Hashmap> = {};
+
+  const block = blocks;
+
+  // only blocks with units are injectable
+  if (blockHasUnits(block)) {
+    mapped[""] = block;
+  }
+
+  return mapped;
+}
+
+function blockHasUnits(item: Block<any>): boolean {
+  return Object.keys(item).some((key) => {
+    if (isBlockTag(item[key])) return false;
+    return !itemIsBlock(item[key as keyof typeof item]);
+  });
+}
+
+function blockHasBlocks(item: unknown): boolean {
+  if (item === null || typeof item !== "object") return false;
+  return Object.keys(item).some((key) =>
+    itemIsBlock(item[key as keyof typeof item]),
+  );
 }
 
 /** Check if any of the definitions are async factories */
-function hasAsyncKeys(list: Hashmap): boolean {
-  return Object.keys(list).some((key) => isAsyncFactory(list[key]));
+function hasAsyncKeys(blockDefs: RecordMap): boolean {
+  return Object.keys(blockDefs).some((blockKey) => {
+    const block = blockDefs[blockKey];
+
+    return Object.keys(block).some((key) => {
+      const item = block[key];
+      return isAsyncFactory(item);
+    });
+  });
 }
 
-async function resolveAsyncFactories(): Promise<void> {
-  const keys = Object.keys(unitDefinitions);
+async function resolveAsyncFactories(defs: RecordMap): Promise<void> {
+  const blockKeys = Object.keys(defs);
 
-  for await (const key of keys) {
-    const unitDef = unitDefinitions[key];
-    if ((isFunction(unitDef) || isPromise(unitDef)) && isFactory(unitDef)) {
-      unitCache[key] = await unitDef();
+  for await (const blockKey of blockKeys) {
+    const block = defs[blockKey];
+    const keys = Object.keys(block);
+
+    for await (const key of keys) {
+      const item = block[key];
+      if ((isFunction(item) || isPromise(item)) && isFactory(item)) {
+        const finalKey = blockKey === "" ? key : `${blockKey}.${key}`;
+        unitCache[finalKey] = await item();
+      }
     }
   }
 }
 
-/** Get the same hashmap `L`, but with all keys prefixed by `P` */
-type PrefixedHashmap<Prefix extends string, H extends Hashmap> = {
-  [K in keyof H as `${Prefix}.${Extract<K, string>}`]: H[K];
-};
+function itemIsBlock(item: unknown): item is Block<any> {
+  // TODO : refactor this mess
+  if (item === null || typeof item !== "object") return false;
+  if (!("default" in item)) return false;
+  if (!isBlockTag(item.default)) return false;
+  return true;
+}
 
-/**
- * Creates a namespaced block of units with a common prefix.
- *
- * @param name - The namespace prefix for all units in the block
- * @param units - Object containing unit definitions to be namespaced
- * @returns Object with all units prefixed with the namespace
- * @example
- * // userModule.ts
- * import { createBlock } from "wiremap";
- * import * as userService from "./userService";
- * import * as userRepo from "./userRepo";
- *
- * // create and export the user block containing two more blocks:
- * // user.service and user.repo
- * export default createBlock("user", {
- *   ...createBlock("service", userService),
- *   ...createBlock("repo", userRepo),
- * });
- */
-export function createBlock<L extends Hashmap, Prefix extends string>(
-  name: Prefix,
-  units: L,
-): PrefixedHashmap<Prefix, L> {
-  const result: Hashmap = {};
-  for (const key in units) {
-    if (Object.prototype.hasOwnProperty.call(units, key)) {
-      result[`${name}.${key}`] = units[key];
-    }
+interface BlockTag<N extends string> {
+  <L extends RecordMap>(): Wire<L>;
+  readonly [blockSymbol]: N;
+  feed: (defs: RecordMap) => void;
+  isFed: boolean;
+}
+
+export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
+  const blockDefs: RecordMap = {};
+
+  function f() {
+    return generateInjector(namespace, blockDefs);
   }
-  return result as PrefixedHashmap<Prefix, L>;
-}
 
-interface BlockInjector<L extends Hashmap, P extends string> {
-  (): BlockProxy<L, P, "">;
-  <K extends "." | BlockPaths<L>>(key?: K): BlockProxy<L, P, K>;
-}
-
-type InjectorFactory<L extends Hashmap> = <N extends BlockPaths<L>>(
-  namespace: N,
-) => BlockInjector<L, N>;
-
-/**
- * Creates an injector factory function for accessing units within specific namespaces.
- *
- * @returns Function that takes a namespace and returns a BlockInjector for that namespace
- * @example
- * import { createInjector } from "wiremap";
- * import type { Units } from "./app";
- *
- * const serviceInjector = createInjector<Units>()("user.service");
- *
- * // Access units from the same block
- * const getUser = serviceInjector(".").getUser;
- *
- * // Access units from root-level
- * const config = serviceInjector().config;
- *
- * // Access units from another block
- * const postArticle = serviceInjector("post.service").postArticle;
- */
-export function createInjector<L extends Hashmap>(): InjectorFactory<L> {
-  return function <N extends BlockPaths<L>>(namespace: N): BlockInjector<L, N> {
-    return generateInjector<L, N>(namespace);
+  const o = {
+    get [blockSymbol]() {
+      return namespace;
+    },
+    feed(defs: RecordMap) {
+      Object.assign(blockDefs, defs);
+    },
+    isFed: false,
   };
+  return Object.assign(f, o);
 }
 
-function generateInjector<Defs extends Hashmap, P extends string>(
-  parent: P,
-): BlockInjector<Defs, P> {
-  if (takenInjectorsKeys.has(parent)) {
-    throw new Error(`Injector for "${parent}" is already in use.`);
-  }
+function getBlockTagName<N extends string, T extends BlockTag<N>>(tag: T): N {
+  return tag[blockSymbol];
+}
 
+function isBlockTag(thing: unknown): thing is BlockTag<string> {
+  return (
+    typeof thing === "function" &&
+    blockSymbol in thing &&
+    typeof thing[blockSymbol] === "string"
+  );
+}
+
+function generateInjector(localPath: string, blockDefs: RecordMap) {
   const localCache: Hashmap = {};
-  takenInjectorsKeys.add(parent);
 
-  function blockInjector(): BlockProxy<Defs, P, "">;
-  function blockInjector<K extends "." | BlockPaths<Defs>>(
-    blockKey: K,
-  ): BlockProxy<Defs, P, K>;
-  function blockInjector<K extends "." | BlockPaths<Defs>>(
-    blockKey?: K,
-  ): BlockProxy<Defs, P, K extends undefined ? "" : K> {
-    const key = (blockKey ?? "") as K extends undefined ? "" : K;
-
-    type ThisProxy = BlockProxy<Defs, P, K extends undefined ? "" : K>;
+  function blockInjector(blockPath?: string) {
+    const key = blockPath ?? "";
 
     if (key in localCache) {
-      return localCache[key] as ThisProxy;
+      return localCache[key] as any;
     }
 
     const k = String(key);
@@ -221,15 +253,23 @@ function generateInjector<Defs extends Hashmap, P extends string>(
 
     if (k === ".") {
       // local block resolution, exposes private units
-      proxy = createBlockProxy(parent, parent) as unknown as ThisProxy;
+      proxy = createBlockProxy(
+        blockDefinitions[localPath],
+        true,
+        blockDefinitions,
+      ) as unknown as any;
     } else if (k === "") {
       // root block resolution
-      proxy = createBlockProxy(parent, "") as ThisProxy;
+      proxy = createBlockProxy(blockDefinitions[""], false, blockDefs) as any;
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(parent, k) as unknown as ThisProxy;
+      proxy = createBlockProxy(
+        blockDefinitions[k],
+        false,
+        blockDefinitions,
+      ) as unknown as any;
     } else {
-      throw new Error(`Unit ${String(key)} not found from block "${parent}"`);
+      throw new Error(`Unit ${k} not found from block "${parent}"`);
     }
 
     localCache[k] = proxy;
@@ -276,73 +316,69 @@ type BlockUnitNames<L extends Hashmap, N extends string> = {
  */
 type PublicBlockUnitNames<L extends Hashmap, N extends string> = {
   [K in keyof L]: K extends `${N}.${NoDots<infer UnitName>}` //
-    ? L[K] extends { isPrivate: true }
+    ? L[K] extends PrivateUnit
       ? never
       : UnitName //
     : never;
 }[keyof L];
 
 type BlockProxy<
-  L extends Hashmap,
-  P extends string,
-  N extends string,
-> = N extends "."
+  B extends Block<any>,
+  Local extends boolean,
+> = Local extends true
   ? {
-      [K in BlockUnitNames<L, P>]: InferUnitValue<L[`${P}.${K}`]>;
+      [K in keyof B]: InferAllUnitValue<B[K]>;
     }
-  : N extends ""
-    ? {
-        [K in BlockUnitNames<L, "">]: InferUnitValue<L[K]>;
-      }
-    : N extends P
-      ? {
-          [K in BlockUnitNames<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
-        }
-      : {
-          [K in PublicBlockUnitNames<L, N>]: InferUnitValue<L[`${N}.${K}`]>;
-        };
+  : {
+      [K in keyof B]: InferPublicUnitValue<B[K]>;
+    };
 
-type InferUnitValue<D> =
+type InferAllUnitValue<D> =
   D extends Factory<infer T> ? (T extends Promise<infer V> ? V : T) : D;
 
-function createBlockProxy<
-  L extends Hashmap,
-  P extends string,
-  N extends string,
->(parent: P, namespace: N): BlockProxy<L, P, N> {
-  const unitKeys = getBlockUnitPaths(parent, namespace);
+type InferPublicUnitValue<D> = D extends PrivateUnit
+  ? never
+  : D extends Factory<infer T>
+    ? T extends Promise<infer V>
+      ? V
+      : T
+    : D;
+
+function createBlockProxy<B extends Hashmap, Local extends boolean>(
+  blockDef: B,
+  local: Local,
+  allDefs: Hashmap,
+) {
+  const unitKeys = getBlockUnitPaths(blockDef, local);
+  const blockPath = getBlockTagName(blockDef.default);
+  blockDef.default.feed(allDefs);
 
   return new Proxy(
     {}, // used as a cache for the block
     {
       get: <K extends string>(cachedblock: Hashmap, prop: K) => {
-        type ProxyValue = InferUnitValue<N extends "" ? L[K] : L[`${N}.${K}`]>;
-
         if (prop in cachedblock) {
-          return cachedblock[prop] as ProxyValue;
+          return cachedblock[prop] as any;
         }
 
-        const finalKey = namespace === "" ? prop : `${namespace}.${prop}`;
-
-        if (unitKeys.includes(finalKey)) {
-          if (finalKey in unitCache) {
-            const cachedValue = unitCache[finalKey];
-            cachedblock[prop] = cachedValue;
-            return cachedValue as ProxyValue;
-          }
-
-          const def = unitDefinitions[finalKey];
-
-          const value = isFactory(def) ? def() : def;
-
-          cachedblock[prop] = value;
-          unitCache[finalKey] = value;
-          return def as ProxyValue;
+        const finalKey = `${blockPath}.${prop}`;
+        if (finalKey in unitCache) {
+          const unit = unitCache[finalKey];
+          cachedblock[prop] = unit;
+          return unit;
         }
 
-        throw new Error(
-          `Key "${String(prop)}" not found in block "${namespace}"`,
-        );
+        if (unitKeys.includes(prop)) {
+          const def = blockDef[prop];
+
+          const unit = isFactory(def) ? def() : def;
+
+          cachedblock[prop] = unit;
+          unitCache[finalKey] = unit;
+          return def as any;
+        }
+
+        throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
       },
 
       ownKeys() {
@@ -358,45 +394,21 @@ function createBlockProxy<
         };
       },
     },
-  ) as BlockProxy<L, P, N>;
+  );
 }
 
 /**
  * Extracts the paths of the units of a block.
- *
- * @Example:
- * This returns ["b.c", "b.d", "b.e.other"]:
- * getBlockUnitPaths("b",
- *   a: 1,
- *   "b.c": 2,
- *   "b.d": 3,
- *   "b.e.other": 3,
- * })
  */
-function getBlockUnitPaths<P extends string, N extends string>(
-  parent: P,
-  namespace: N,
+function getBlockUnitPaths<B extends Hashmap, Local extends boolean>(
+  blockDef: B,
+  local: Local,
 ) {
-  if (namespace === "") {
-    return Object.keys(unitDefinitions).filter(
-      (key) => key.split(".").length === 1,
-    );
-  }
-
-  if ((namespace as string) === parent) {
-    return Object.keys(unitDefinitions).filter(
-      (key) =>
-        key.startsWith(`${namespace}.`) &&
-        key.slice(namespace.length + 1).split(".").length === 1,
-    );
-  }
-
-  return Object.keys(unitDefinitions).filter(
-    (key) =>
-      key.startsWith(`${namespace}.`) &&
-      key.slice(namespace.length + 1).split(".").length === 1 &&
-      !isPrivate(unitDefinitions[key]),
-  );
+  return Object.keys(blockDef).filter((key) => {
+    const def = blockDef[key];
+    if (isBlockTag(def)) return false;
+    return local ? true : !isPrivate(def) ? true : false;
+  });
 }
 
 function isPromise<T>(value: unknown): value is Promise<T> {
@@ -458,84 +470,4 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
     return "isPrivate" in unit && unit.isPrivate === true;
   }
   return false;
-}
-
-/**
- * Mocks dependency injection for testing by temporarily replacing units with test doubles.
- *
- * @param unit - The function to be tested that uses dependency injection
- * @param units - Mock units to replace the real dependencies during test execution
- * @returns The original function with mocked dependencies injected
- * @example
- * import { mockInjection } from "wiremap";
- * import { getUsers } from "./userService";
- *
- * const fakeUnits = {
- *   db: { users: [{ id: "1", name: "Test", email: "test@example.com", isAdmin: false }] },
- *   "user.service.getUserByEmail": (email) => ({ id: "1", name: "Test", email, isAdmin: false }),
- * };
- *
- * const getUsersMock = mockInjection(getUsers, fakeUnits);
- * const users = getUsersMock();
- * console.log(users.length); // 1
- */
-export function mockInjection<D, L extends Hashmap>(unit: D, units: L): D {
-  if (!isFunction(unit)) {
-    throw new Error("The unit to be mocked must be a function");
-  }
-
-  return function (...args: unknown[]) {
-    const oldPublicKeys = blockPaths;
-    blockPaths = getBlockPaths(units);
-    const oldMainCache = unitCache;
-    const oldMainDefs = unitDefinitions;
-    unitDefinitions = units;
-    // this weird cast is needed to make TypeScript happy
-    const u = unit as Func;
-    const result = u(...args);
-    unitCache = oldMainCache;
-    unitDefinitions = oldMainDefs;
-    blockPaths = oldPublicKeys;
-    return result;
-  } as D;
-}
-
-/**
- * Mocks dependency injection for testing factory functions by replacing units with test doubles.
- *
- * @param unit - The factory function to be tested that returns a function using dependency injection
- * @param units - Mock units to replace the real dependencies during test execution
- * @returns The result of calling the factory function with mocked dependencies
- * @example
- * import { mockFactory } from "wiremap";
- *
- * const fakeUnits = {
- *   "user.service.getByEmail": (email) => ({ email }),
- * };
- *
- * const inj = createInjector<typeof fakeUnits>()("user.service");
- *
- * const getUser = mockFactory(() => {
- *   const getByEmail = inj("user.service").getByEmail;
- *   return (email) => getByEmail(email);
- * }, fakeUnits);
- *
- * console.log(getUser("test@example.com").email); // "test@example.com"
- */
-export function mockFactory<D extends Func, L extends Hashmap>(
-  unit: D,
-  units: L,
-): ReturnType<D> {
-  return function (...args: unknown[]) {
-    const oldPublicKeys = blockPaths;
-    blockPaths = getBlockPaths(units);
-    const oldMainCache = unitCache;
-    const oldMainDefs = unitDefinitions;
-    unitDefinitions = units;
-    const result = (unit() as Func)(...args);
-    unitCache = oldMainCache;
-    unitDefinitions = oldMainDefs;
-    blockPaths = oldPublicKeys;
-    return result;
-  } as ReturnType<D>;
 }

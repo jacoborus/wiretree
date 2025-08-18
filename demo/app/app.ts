@@ -1,33 +1,33 @@
 import { db } from "../db.ts";
-import postMod from "../post/postMod.ts";
-import userMod from "../user/userMod.ts";
-import { wireApp } from "../../src/wiremap.ts";
+import * as postMod from "../post/postMod.ts";
+import * as userMod from "../user/userMod.ts";
+import { wireUp } from "../../src/wiremap.ts";
 
 const defs = {
   db,
   valor: 5,
   printValor: () => {
-    console.log(appInjector().valor);
+    console.log(app().valor);
   },
   test: () => "testtttt",
-  ...userMod,
-  ...postMod,
+  user: userMod,
+  post: postMod,
 } as const;
 
 export type Defs = typeof defs;
 
-export const appInjector = await wireApp(defs);
+export const app = await wireUp(defs);
 
-appInjector().printValor();
+app().printValor();
 
-const addUser = appInjector("user.service").addUser;
+const addUser = app("user.service").addUser;
 
 const userId = addUser("jacobo", "jacobo@example.com", true);
-console.log("users:", appInjector("user.service").getUsers());
+console.log("users:", app("user.service").getUsers());
 
-const addPost = appInjector("post.service").addPost;
+const addPost = app("post.service").addPost;
 
 addPost("Hello World", "This is a test post", userId);
 addPost("Hola Mundo!", "Esto es una entrada de prueba", userId);
 
-console.log(appInjector("post.service").getPosts());
+console.log(app("post.service").getPosts());

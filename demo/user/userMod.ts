@@ -1,6 +1,6 @@
-import { createBlock } from "../../src/wiremap.ts";
+import { tagBlock } from "../../src/wiremap.ts";
 import * as userService from "./userService.ts";
 
-export default createBlock("user", {
-  ...createBlock("service", userService),
-});
+export default tagBlock("user");
+
+export const service = userService;

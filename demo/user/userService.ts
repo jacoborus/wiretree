@@ -1,25 +1,29 @@
-import { createInjector } from "../../src/wiremap.ts";
+import { tagBlock } from "../../src/wiremap.ts";
 import type { Defs } from "../app/app.ts";
 
-const inj = createInjector<Defs>()("user.service");
+const $ = tagBlock("user.service");
+
+export default $;
+
+const wire = $<Defs>();
 
 export function getUsers() {
-  const db = inj().db;
+  const db = wire().db;
   return db.users;
 }
 
 export function getUser(id: string) {
-  const db = inj().db;
+  const db = wire().db;
   return db.users.find((user) => user.id === id);
 }
 
 export function getUserByEmail(email: string) {
-  const db = inj().db;
+  const db = wire().db;
   return db.users.find((user) => user.email === email);
 }
 
 export function addUser(name: string, email: string, isAdmin = false) {
-  const getUserByEmail = inj(".").getUserByEmail;
+  const getUserByEmail = wire(".").getUserByEmail;
   const existingUser = getUserByEmail(email);
   if (existingUser) {
     throw new Error(`User with email ${email} already exists.`);
@@ -31,7 +35,7 @@ export function addUser(name: string, email: string, isAdmin = false) {
     email,
     isAdmin,
   };
-  const db = inj().db;
+  const db = wire().db;
   db.users.push(user);
   return user.id;
 }
