@@ -8,9 +8,7 @@ let unitCache: Hashmap = {};
 let proxiesCache = new Map<string, unknown>();
 
 type WiredApp<Defs extends Hashmap> =
-  HasAsync<Defs> extends true
-    ? Promise<BlockInjector<Defs, "">>
-    : BlockInjector<Defs, "">;
+  HasAsync<Defs> extends true ? Promise<Wire<Defs, "">> : Wire<Defs, "">;
 
 type HasAsync<T extends Hashmap> = true extends {
   [K in keyof T]: IsAsyncFactory<T[K]>;
@@ -18,11 +16,17 @@ type HasAsync<T extends Hashmap> = true extends {
   ? true
   : false;
 
+// TODO: continue here
+// TODO: continue here
+type Wire<D extends Hashmap, N extends string> = <P extends keyof D>(
+  blockPath: P,
+) => true;
+
 /**
- * Wires up a dependency injection application from unit definitions.
+ * Wires up a block of unit definitions, and other blocks.
  *
  * @param defs - Object containing unit definitions, where keys are unit names and values are factories or values
- * @returns Promise<BlockInjector> if async factory units exist, otherwise BlockInjector for synchronous resolution
+ * @returns Promise<Wire> if async factory units exist, otherwise Wire for synchronous resolution
  * @example
  * // Define your units
  * const units = {
@@ -45,24 +49,24 @@ type HasAsync<T extends Hashmap> = true extends {
  * console.log(db.connection.url); // "mongodb://localhost"
  */
 export function wireUp<Defs extends Hashmap>(defs: Defs): WiredApp<Defs> {
-  const finalDefinitions = Object.assign(defs, { default: tagBlock("") });
+  const finalDefinitions = Object.assign(defs, { $: tagBlock("") });
   const blockDefinitions = mapBlocks(finalDefinitions);
-  Object.assign(blockDefinitions, mapRoot(defs));
+  if (blockHasUnits(defs)) blockDefinitions[""] = defs;
+
   unitCache = {};
   proxiesCache = new Map();
   feedBlockTags(blockDefinitions);
-  console.log(JSON.stringify(""));
-  const injector = generateInjector("", blockDefinitions);
+  const wire = prepareWire("", blockDefinitions);
 
   if (hasAsyncKeys(blockDefinitions)) {
     // This will cause wireUp to return a promise that resolves
     // when all async factories are resolved
     return resolveAsyncFactories(blockDefinitions).then(
-      () => injector,
+      () => wire,
     ) as WiredApp<Defs>;
   }
 
-  return injector as unknown as WiredApp<Defs>;
+  return wire as unknown as WiredApp<Defs>;
 }
 
 // type Unpack<T> = {
@@ -82,7 +86,7 @@ function mapBlocks<L extends Hashmap>(
     const block = blocks[key];
 
     if (itemIsBlock(block)) {
-      const tagName = getBlockTagName(block.default as BlockTag<string>);
+      const tagName = getBlockTagName(block.$ as BlockTag<string>);
 
       // this is the key of the block given the path
       const finalKey = prefix ? `${prefix}.${key}` : key;
@@ -94,7 +98,7 @@ function mapBlocks<L extends Hashmap>(
         );
       }
 
-      // only blocks with units are injectable
+      // only blocks with units are wireable
       if (blockHasUnits(block)) {
         mapped[tagName] = block;
       }
@@ -106,19 +110,6 @@ function mapBlocks<L extends Hashmap>(
       }
     }
   });
-
-  return mapped;
-}
-
-function mapRoot<L extends Hashmap>(blocks: L): Record<string, Hashmap> {
-  const mapped: Record<string, Hashmap> = {};
-
-  const block = blocks;
-
-  // only blocks with units are injectable
-  if (blockHasUnits(block)) {
-    mapped[""] = block;
-  }
 
   return mapped;
 }
@@ -153,7 +144,7 @@ function feedBlockTags(defs: Hashmap): void {
   const blockPaths = Object.keys(defs);
   blockPaths.forEach((path) => {
     const block = defs[path];
-    block.default.feed(defs);
+    block.$.feed(defs);
   });
 }
 
@@ -178,8 +169,8 @@ function itemIsBlock(item: unknown): item is Block<any> {
   return (
     item !== null &&
     typeof item === "object" &&
-    "default" in item &&
-    isBlockTag(item.default)
+    "$" in item &&
+    isBlockTag(item.$)
   );
 }
 
@@ -193,8 +184,7 @@ export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
   const blockDefs: RecordMap = {};
 
   function f() {
-    console.log(JSON.stringify(namespace));
-    return generateInjector(namespace, blockDefs);
+    return prepareWire(namespace, blockDefs);
   }
 
   const o = {
@@ -220,11 +210,10 @@ function isBlockTag(thing: unknown): thing is BlockTag<string> {
   );
 }
 
-function generateInjector(localPath: string, blockDefs: RecordMap) {
-  if (!blockDefs) console.trace();
+function prepareWire(localPath: string, blockDefs: RecordMap) {
   const localCache: Hashmap = {};
 
-  function blockInjector(blockPath?: string) {
+  return function createWire(blockPath?: string) {
     const blockPaths = Object.keys(blockDefs);
     const key = blockPath ?? "";
 
@@ -252,9 +241,7 @@ function generateInjector(localPath: string, blockDefs: RecordMap) {
     localCache[k] = proxy;
     proxiesCache.set(k, proxy);
     return proxy;
-  }
-
-  return blockInjector;
+  };
 }
 
 /**
@@ -326,7 +313,7 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
   local: Local,
 ) {
   const unitKeys = getBlockUnitPaths(blockDef, local);
-  const blockPath = getBlockTagName(blockDef.default);
+  const blockPath = getBlockTagName(blockDef.$);
 
   return new Proxy(
     {}, // used as a cache for the block

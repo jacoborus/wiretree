@@ -1,9 +1,7 @@
 import { tagBlock } from "../../src/wiremap.ts";
 import type { Defs } from "../app/app.ts";
 
-const $ = tagBlock("user.service");
-
-export default $;
+export const $ = tagBlock("user.service");
 
 const wire = $<Defs>();
 
