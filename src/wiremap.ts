@@ -3,7 +3,11 @@ type RecordMap = Record<string, Hashmap>;
 type BlocksMap = Record<string, Block<any>>;
 
 type Block<T extends Hashmap> = T & {
-  $: { [blockSymbol]: string; feed: (data: Hashmap) => void };
+  $: {
+    [blockSymbol]: string;
+    feed: (data: Hashmap) => void;
+    <L extends RecordMap>(): Wire<L, string>;
+  };
 };
 
 const blockSymbol = Symbol("BlockSymbol");
@@ -282,7 +286,7 @@ function isBlockTag(thing: unknown): thing is BlockTag<string> {
   );
 }
 
-function prepareWire<Defs extends Hashmap, P extends BlockPaths<Defs>>(
+function prepareWire<Defs extends Hashmap, P extends keyof Defs>(
   localPath: P,
   blockDefs: Defs,
 ) {
@@ -304,23 +308,17 @@ function prepareWire<Defs extends Hashmap, P extends BlockPaths<Defs>>(
       // local block resolution, exposes private units
 
       proxy = createBlockProxy(
-        blockDefs[localPath] as Block<(typeof blockDefs)[typeof localPath]>,
+        blockDefs[localPath] as Block<Hashmap>,
         true,
       ) as unknown as any;
     } else if (k === "") {
       // root block resolution
 
-      proxy = createBlockProxy(
-        blockDefs[""] as Block<(typeof blockDefs)[""]>,
-        false,
-      ) as any;
+      proxy = createBlockProxy(blockDefs[""] as Block<Hashmap>, false) as any;
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
 
-      proxy = createBlockProxy(
-        blockDefs[k] as Block<(typeof blockDefs)[typeof k]>,
-        false,
-      );
+      proxy = createBlockProxy(blockDefs[k] as Block<Hashmap>, false);
     } else {
       throw new Error(`Unit ${k} not found from block "${parent}"`);
     }
