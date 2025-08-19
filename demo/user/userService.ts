@@ -10,6 +10,16 @@ export function getUsers() {
   return db.users;
 }
 
+/**
+ * Get an user by id
+ *
+ * @param id - Id of the user
+ * @returns  a user or undefined
+ *
+ * ```ts
+ * const user = getUser('1234')
+ * ```
+ */
 export function getUser(id: string) {
   const db = wire().db;
   return db.users.find((user) => user.id === id);

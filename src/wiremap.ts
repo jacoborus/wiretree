@@ -16,14 +16,14 @@ type WiredUp<Defs extends Hashmap> =
     : Wire<Defs, "">;
 
 type AnyBlockHasAsync<R extends Hashmap> = R[keyof R] extends Hashmap
-  ? true extends BlockHasAsync<R[keyof R]>
+  ? BlockHasAsyncFactory<R[keyof R]> extends true
     ? true
     : false
-  : never;
+  : false;
 
-type BlockHasAsync<T extends Hashmap> = true extends {
+type BlockHasAsyncFactory<T extends Hashmap> = {
   [K in keyof T]: IsAsyncFactory<T[K]>;
-}[keyof T]
+}[keyof T] extends true
   ? true
   : false;
 
@@ -486,12 +486,8 @@ function isFactory<T>(unit: unknown): unit is Factory<T> {
   return "isFactory" in unit && unit.isFactory === true;
 }
 
-type IsAsyncFactory<T> = T extends { isFactory: true }
-  ? T extends (...args: unknown[]) => Promise<unknown>
-    ? true
-    : T extends Promise<unknown>
-      ? true
-      : false
+type IsAsyncFactory<T> = T extends { isFactory: true; isAsync: true }
+  ? true
   : false;
 
 function isAsyncFactory<T>(unit: T): boolean {
