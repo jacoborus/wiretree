@@ -95,7 +95,7 @@ export function wireUp<Defs extends Hashmap>(
 // };
 
 export type InferBlocks<R extends Hashmap> = {
-  [K in BlockPaths<R> as string]: K extends "" ? R : PathValue<R, K>;
+  [K in BlockPaths<R>]: K extends "" ? R : PathValue<R, K>;
 };
 
 export type BlockPaths<T extends Hashmap, P extends string = ""> =
