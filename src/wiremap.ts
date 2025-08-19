@@ -94,20 +94,18 @@ export function wireUp<Defs extends Hashmap>(
 //   [K in keyof T]: Unpack<T[K]>;
 // };
 
-/** Extract keys with no dots in them */
-type NoDots<T extends string> = T extends `${string}.${string}` ? never : T;
-
 export type InferBlocks<R extends Hashmap> = {
-  [K in BlockPaths<R>]: K extends "" ? R : PathValue<R, Extract<K, string>>;
+  [K in BlockPaths<R> as string]: K extends "" ? R : PathValue<R, K>;
 };
 
 export type BlockPaths<T extends Hashmap, P extends string = ""> =
+  | ""
   | {
-      [K in keyof T]: T[K] extends Hashmap //
+      [K in keyof T]: T[K] extends Hashmap
         ?
             | (BlockHasUnits<T[K]> extends true
                 ? P extends ""
-                  ? K
+                  ? `${Extract<K, string>}`
                   : `${P}.${Extract<K, string>}`
                 : never)
             | (T[K] extends Block<T[K]>
@@ -121,8 +119,7 @@ export type BlockPaths<T extends Hashmap, P extends string = ""> =
                   : never
                 : never)
         : never;
-    }[keyof T]
-  | "";
+    }[keyof T];
 
 function mapBlocks<L extends Hashmap>(
   blocks: L,
@@ -184,8 +181,8 @@ type BlockHasBlocks<T extends Hashmap> = true extends {
 // }>;
 
 type BlockHasUnits<T extends Hashmap> = true extends {
-  [K in keyof T]: IsBlock<T[K]> extends true //
-    ? false //
+  [K in keyof T]: IsBlock<T[K]> extends true
+    ? false
     : K extends "$"
       ? false
       : true;
