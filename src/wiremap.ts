@@ -28,10 +28,13 @@ type BlockHasAsyncFactory<T extends Hashmap> = {
   : false;
 
 interface Wire<D extends Hashmap, N extends string> {
-  (): BlockProxy<D[""], false>;
+  (): BlockProxy<Omit<D[""], "$">, false>;
   <K extends "." | keyof D>(
     blockPath?: K,
-  ): BlockProxy<D[K extends "." ? N : K], N extends K ? true : false>;
+  ): BlockProxy<
+    Omit<D[K extends "." ? N : K], "$">,
+    N extends K ? true : false
+  >;
 }
 
 /**
@@ -328,48 +331,6 @@ function prepareWire<Defs extends Hashmap, P extends BlockPaths<Defs>>(
   };
 }
 
-/**
- * Extract the names of the units of a block
- *
- * This will  return "c" | "d":
- *
- * BlockUnitNames<{
- *   a: 1,
- *   "b.c": 2,
- *   "b.d": 3,
- *   "b.e.other": 3,
- * }, "b">
- */
-type BlockUnitNames<L extends Hashmap, N extends string> = {
-  [K in keyof L]: N extends ""
-    ? K extends NoDots<infer UnitName>
-      ? UnitName
-      : never
-    : K extends `${N}.${NoDots<infer UnitName>}`
-      ? UnitName
-      : never;
-}[keyof L];
-
-/**
- * Extract the names of the public units of a block
- *
- * This will  return "c" | "d":
- *
- * BlockUnitNames<{
- *   a: 1,
- *   "b.c": 2,
- *   "b.d": 3,
- *   "b.c": {(): any; isPrivate: true }
- * }, "b">
- */
-type PublicBlockUnitNames<L extends Hashmap, N extends string> = {
-  [K in keyof L]: K extends `${N}.${NoDots<infer UnitName>}` //
-    ? L[K] extends PrivateUnit
-      ? never
-      : UnitName //
-    : never;
-}[keyof L];
-
 type BlockProxy<
   B extends Block<any>,
   Local extends boolean,
@@ -405,6 +366,10 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
       get: <K extends string>(cachedblock: Hashmap, prop: K) => {
         if (prop in cachedblock) {
           return cachedblock[prop] as any;
+        }
+
+        if (prop === "$") {
+          throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
         }
 
         const finalKey = `${blockPath}.${prop}`;

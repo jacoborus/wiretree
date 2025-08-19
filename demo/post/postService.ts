@@ -9,6 +9,7 @@ export function getPosts() {
   const collection = wire(".").collection;
   return collection.slice();
 }
+// getPosts.isPrivate = true as const;
 
 export function getPost(id: string) {
   const db = wire().db;
