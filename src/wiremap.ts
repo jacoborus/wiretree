@@ -1,13 +1,9 @@
 type Hashmap = Record<string, unknown>;
 type RecordMap = Record<string, Hashmap>;
-type BlocksMap = Record<string, Block<any>>;
+type BlocksMap = Record<string, Block<Hashmap>>;
 
 type Block<T extends Hashmap> = T & {
-  $: {
-    [blockSymbol]: string;
-    feed: (data: Hashmap) => void;
-    <L extends RecordMap>(): Wire<L, string>;
-  };
+  $: BlockTag<string>;
 };
 
 const blockSymbol = Symbol("BlockSymbol");
@@ -80,7 +76,7 @@ export function wireUp<Defs extends Hashmap>(
 
   unitCache = {};
   proxiesCache = new Map();
-  feedBlockTags(blockDefinitions);
+  feedBlockTags(blockDefinitions as BlocksMap);
   const wire = prepareWire("", blockDefinitions);
 
   if (hasAsyncKeys(blockDefinitions)) {
