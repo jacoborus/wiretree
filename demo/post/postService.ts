@@ -11,6 +11,16 @@ export function getPosts() {
 }
 // getPosts.isPrivate = true as const;
 
+/**
+ * Retrieve a post from the database
+ *
+ * @param id - id of the post
+ * @returns a post or undefined
+ *
+ * ```ts
+ * const post = getPost('1234abcd')
+ * ```
+ */
 export function getPost(id: string) {
   const db = wire().db;
   return db.posts.find((post) => post.id === id);
@@ -27,6 +37,9 @@ export function addPost(title: string, content: string, userId: string) {
   return id;
 }
 
+/**
+ * The posts collection of the database
+ */
 export function collection() {
   const db = wire().db;
   return new Promise<typeof db.posts>((resolve) => {

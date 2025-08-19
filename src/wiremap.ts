@@ -32,14 +32,18 @@ type BlockHasAsyncFactory<T extends Hashmap> = {
   : false;
 
 interface Wire<D extends Hashmap, N extends string> {
-  (): BlockProxy<Omit<D[""], "$">, false>;
+  (): BlockProxy<Omit<D[""], "$" | ExtractBlockKeys<D[""]>>, false>;
   <K extends "." | keyof D>(
     blockPath?: K,
   ): BlockProxy<
-    Omit<D[K extends "." ? N : K], "$">,
+    Omit<D[K extends "." ? N : K], "$" | ExtractBlockKeys<D[""]>>,
     N extends K ? true : false
   >;
 }
+
+type ExtractBlockKeys<T> = {
+  [K in keyof T]: T[K] extends Block<Hashmap> ? K : never;
+}[keyof T];
 
 /**
  * Wires up a block of unit definitions, and other blocks.
@@ -379,6 +383,11 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
 
         if (unitKeys.includes(prop)) {
           const def = blockDef[prop];
+
+          const d = def;
+          if (itemIsBlock(d)) {
+            throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
+          }
 
           const unit = isFactory(def) ? def() : def;
 
