@@ -72,7 +72,7 @@ export function wireUp<Defs extends Hashmap>(
 ): WiredUp<InferBlocks<Defs>> {
   const finalDefinitions = Object.assign(defs, { $: tagBlock("") });
   const blockDefinitions = mapBlocks(finalDefinitions);
-  if (blockHasUnits(finalDefinitions)) blockDefinitions[""] = finalDefinitions;
+  if (hasUnits(finalDefinitions)) blockDefinitions[""] = finalDefinitions;
 
   unitCache = {};
   proxiesCache = new Map();
@@ -103,7 +103,7 @@ export type BlockPaths<T extends Hashmap, P extends string = ""> =
   | {
       [K in keyof T]: T[K] extends Hashmap
         ?
-            | (BlockHasUnits<T[K]> extends true
+            | (HasUnits<T[K]> extends true
                 ? P extends ""
                   ? `${Extract<K, string>}`
                   : `${P}.${Extract<K, string>}`
@@ -141,12 +141,12 @@ function mapBlocks<L extends Hashmap>(blocks: L, prefix?: string): BlocksMap {
       }
 
       // only blocks with units are wireable
-      if (blockHasUnits(block)) {
+      if (hasUnits(block)) {
         mapped[tagName] = block;
       }
 
       // loop through sub-blocks
-      if (blockHasBlocks(block)) {
+      if (hasBlocks(block)) {
         const subBlocks = mapBlocks(block as Hashmap, finalKey);
         Object.assign(mapped, subBlocks);
       }
@@ -154,13 +154,6 @@ function mapBlocks<L extends Hashmap>(blocks: L, prefix?: string): BlocksMap {
   });
 
   return mapped;
-}
-
-function blockHasUnits(item: Block<Hashmap>): boolean {
-  return Object.keys(item).some((key) => {
-    if (isBlockTag(item[key])) return false;
-    return !itemIsBlock(item[key as keyof typeof item]);
-  });
 }
 
 // type X = BlockHasUnits<{
@@ -171,7 +164,7 @@ function blockHasUnits(item: Block<Hashmap>): boolean {
 //   };
 // }>;
 
-type BlockHasUnits<T extends Hashmap> = true extends {
+type HasUnits<T extends Hashmap> = true extends {
   [K in keyof T]: IsBlock<T[K]> extends true
     ? false
     : K extends "$"
@@ -181,17 +174,22 @@ type BlockHasUnits<T extends Hashmap> = true extends {
   ? true
   : false;
 
+function hasUnits(item: Block<Hashmap>): boolean {
+  return Object.keys(item).some((key) => {
+    if (isBlockTag(item[key])) return false;
+    return !itemIsBlock(item[key as keyof typeof item]);
+  });
+}
+
 type HasBlocks<T extends Hashmap> = true extends {
   [K in keyof T]: T[K] extends Block<Hashmap> ? true : false;
 }[keyof T]
   ? true
   : false;
 
-function blockHasBlocks(item: Hashmap): boolean {
+function hasBlocks(item: Hashmap): boolean {
   if (item === null || typeof item !== "object") return false;
-  return Object.keys(item).some((key) =>
-    itemIsBlock(item[key as keyof typeof item]),
-  );
+  return Object.keys(item).some((key) => itemIsBlock(item[key]));
 }
 
 /** Check if any of the definitions are async factories */
@@ -444,7 +442,11 @@ function isFactory<T>(unit: unknown): unit is Factory<T> {
 }
 
 type IsAsyncFactory<T> = T extends { isFactory: true; isAsync: true }
-  ? true
+  ? T extends Func
+    ? true
+    : T extends Promise<unknown>
+      ? true
+      : false
   : false;
 
 function isAsyncFactory<T>(unit: T): boolean {
