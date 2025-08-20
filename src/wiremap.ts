@@ -1,5 +1,4 @@
 type Hashmap = Record<string, unknown>;
-type RecordMap = Record<string, Hashmap>;
 type BlocksMap = Record<string, Block<Hashmap>>;
 
 type Block<T extends Hashmap> = T & {
@@ -11,17 +10,14 @@ let unitCache: Hashmap = {};
 let proxiesCache = new Map<string, unknown>();
 
 type WiredUp<Defs extends Hashmap> =
-  AnyBlockHasAsync<Defs> extends true
+  AnyItemContainsAnyAsyncFactory<Defs> extends true
     ? Promise<Wire<Defs, "">>
     : Wire<Defs, "">;
 
-type AnyBlockHasAsync<R extends Hashmap> = R[keyof R] extends Hashmap
-  ? BlockHasAsyncFactory<R[keyof R]> extends true
-    ? true
-    : false
-  : false;
+type AnyItemContainsAnyAsyncFactory<R extends Hashmap> =
+  R[keyof R] extends Hashmap ? ContainsAsyncFactory<R[keyof R]> : false;
 
-type BlockHasAsyncFactory<T extends Hashmap> = {
+type ContainsAsyncFactory<T extends Hashmap> = {
   [K in keyof T]: IsAsyncFactory<T[K]>;
 }[keyof T] extends true
   ? true
@@ -37,6 +33,7 @@ interface Wire<D extends Hashmap, N extends string> {
   >;
 }
 
+/** From an object, extract the keys that contain blocks */
 type ExtractBlockKeys<T> = {
   [K in keyof T]: T[K] extends Block<Hashmap> ? K : never;
 }[keyof T];
@@ -72,7 +69,7 @@ export function wireUp<Defs extends Hashmap>(
 ): WiredUp<InferBlocks<Defs>> {
   const finalDefinitions = Object.assign(defs, { $: tagBlock("") });
   const blockDefinitions = mapBlocks(finalDefinitions);
-  if (hasUnits(finalDefinitions)) blockDefinitions[""] = finalDefinitions;
+  blockDefinitions[""] = finalDefinitions;
 
   unitCache = {};
   proxiesCache = new Map();
@@ -90,15 +87,22 @@ export function wireUp<Defs extends Hashmap>(
   return wire as unknown as WiredUp<InferBlocks<Defs>>;
 }
 
-// type Unpack<T> = {
-//   [K in keyof T]: Unpack<T[K]>;
-// };
+// type Unpack<T> = { [K in keyof T]: Unpack<T[K]> };
 
 export type InferBlocks<R extends Hashmap> = {
   [K in BlockPaths<R>]: K extends "" ? R : PathValue<R, K>;
 };
 
-export type BlockPaths<T extends Hashmap, P extends string = ""> =
+// Access type by a dot notated path
+type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? PathValue<T[K], Rest>
+    : never
+  : P extends keyof T
+    ? T[P]
+    : never;
+
+type BlockPaths<T extends Hashmap, P extends string = ""> =
   | ""
   | {
       [K in keyof T]: T[K] extends Hashmap
@@ -156,14 +160,7 @@ function mapBlocks<L extends Hashmap>(blocks: L, prefix?: string): BlocksMap {
   return mapped;
 }
 
-// type X = BlockHasUnits<{
-//   $: { [blockSymbol]: "asdfasdf" };
-//   a: {
-//     $: { [blockSymbol]: "asdfasdf" };
-//     b: {};
-//   };
-// }>;
-
+/** Whether an object contains items that are neither blocks nor blockTags */
 type HasUnits<T extends Hashmap> = true extends {
   [K in keyof T]: IsBlock<T[K]> extends true
     ? false
@@ -181,6 +178,7 @@ function hasUnits(item: Block<Hashmap>): boolean {
   });
 }
 
+/** Whether an object contains items that are blocks */
 type HasBlocks<T extends Hashmap> = true extends {
   [K in keyof T]: T[K] extends Block<Hashmap> ? true : false;
 }[keyof T]
@@ -193,7 +191,7 @@ function hasBlocks(item: Hashmap): boolean {
 }
 
 /** Check if any of the definitions are async factories */
-function hasAsyncKeys(blockDefs: RecordMap): boolean {
+function hasAsyncKeys(blockDefs: BlocksMap): boolean {
   return Object.keys(blockDefs).some((blockKey) => {
     const block = blockDefs[blockKey];
 
@@ -212,7 +210,7 @@ function feedBlockTags(defs: BlocksMap): void {
   });
 }
 
-async function resolveAsyncFactories(defs: RecordMap): Promise<void> {
+async function resolveAsyncFactories(defs: BlocksMap): Promise<void> {
   const blockKeys = Object.keys(defs);
 
   for await (const blockKey of blockKeys) {
@@ -230,7 +228,7 @@ async function resolveAsyncFactories(defs: RecordMap): Promise<void> {
 }
 
 interface BlockTag<N extends string> {
-  <L extends RecordMap>(): Wire<L, N>;
+  <L extends Hashmap>(): Wire<L, N>;
   readonly [blockSymbol]: N;
   feed: (defs: Hashmap) => void;
 }
@@ -246,7 +244,7 @@ export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
       get [blockSymbol]() {
         return namespace;
       },
-      feed(defs: RecordMap) {
+      feed(defs: Hashmap) {
         Object.assign(blockDefs, defs);
       },
     },
@@ -316,27 +314,16 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
   };
 }
 
-type BlockProxy<
-  B extends Block<any>,
-  Local extends boolean,
-> = Local extends true
-  ? {
-      [K in keyof B]: InferAllUnitValue<B[K]>;
-    }
-  : {
-      [K in keyof B]: InferPublicUnitValue<B[K]>;
-    };
+type BlockProxy<B extends Hashmap, Local extends boolean> = Local extends true
+  ? { [K in keyof B]: InferUnitValue<B[K]> }
+  : { [K in keyof B]: InferPublicUnitValue<B[K]> };
 
-type InferAllUnitValue<D> =
+type InferUnitValue<D> =
   D extends Factory<infer T> ? (T extends Promise<infer V> ? V : T) : D;
 
 type InferPublicUnitValue<D> = D extends PrivateUnit
   ? never
-  : D extends Factory<infer T>
-    ? T extends Promise<infer V>
-      ? V
-      : T
-    : D;
+  : InferUnitValue<D>;
 
 function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
   blockDef: B,
@@ -430,6 +417,7 @@ function isFunction<T>(unit: unknown): unit is () => T {
 
 interface Factory<T> {
   (...args: unknown[]): T;
+  (...args: unknown[]): Promise<T>;
   isFactory: true;
 }
 
@@ -441,13 +429,12 @@ function isFactory<T>(unit: unknown): unit is Factory<T> {
   return "isFactory" in unit && unit.isFactory === true;
 }
 
-type IsAsyncFactory<T> = T extends { isFactory: true; isAsync: true }
-  ? T extends Func
-    ? true
-    : T extends Promise<unknown>
+type IsAsyncFactory<T> =
+  T extends Factory<unknown>
+    ? T extends { isAsync: true }
       ? true
       : false
-  : false;
+    : false;
 
 function isAsyncFactory<T>(unit: T): boolean {
   if (!isFactory(unit)) return false;
@@ -456,7 +443,7 @@ function isAsyncFactory<T>(unit: T): boolean {
   if ("isAsync" in unit && unit.isAsync === true) return true;
 
   const AsyncFunction = Object.getPrototypeOf(async function () {
-    /* not empty anymore */
+    // not empty anymore
   }).constructor;
   return unit instanceof AsyncFunction;
 }
@@ -472,12 +459,3 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
   }
   return false;
 }
-
-// Access type by a dot notated path
-type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
-  ? K extends keyof T
-    ? PathValue<T[K], Rest>
-    : never
-  : P extends keyof T
-    ? T[P]
-    : never;
