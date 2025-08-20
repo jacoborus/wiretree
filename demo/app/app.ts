@@ -1,11 +1,7 @@
 import { db } from "../db.ts";
 import * as postMod from "../post/postMod.ts";
 import * as userMod from "../user/userMod.ts";
-import {
-  wireUp,
-  type InferBlocks,
-  type BlockPaths,
-} from "../../src/wiremap.ts";
+import { wireUp, type InferBlocks } from "../../src/wiremap.ts";
 
 const defs = {
   db,
@@ -19,7 +15,6 @@ const defs = {
 } as const;
 
 export type Defs = InferBlocks<typeof defs>;
-export type Paths = BlockPaths<typeof defs>;
 
 export const app = await wireUp(defs);
 
