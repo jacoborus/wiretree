@@ -4,6 +4,11 @@
   "license": "MIT",
   "description": "Compositional dependency injection framework.",
   "exports": "./src/wiremap.ts",
+  "tasks": {
+    "test": "deno test",
+    "lint": "deno lint --unstable src demo",
+    "fmt": "deno fmt --check src demo"
+  },
   "publish": {
     "include": [
       "LICENSE",
