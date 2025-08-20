@@ -38,27 +38,30 @@ bun add wiremap
 ## 🚀 Basic Example
 
 ```ts
-import { createBlock, wireApp } from "./src/wiremap.ts";
+import { wireUp, tagBlock } from "wiremap";
 
-// Define your units
-const units = {
+// userMod.ts - Create a block by exporting $ and individual units
+export const $ = tagBlock("user");
+export const addUser = (name: string, email: string) => ({ name, email, id: Math.random() });
+export const getUsers = () => [];
+
+// app.ts - Wire your application
+import * as userMod from "./userMod.ts";
+
+const defs = {
   config: { port: 3000, host: "localhost" },
-  ...createBlock("database", {
-    connection: () => ({ url: "mongodb://localhost" }),
-    users: [] as User[],
-  }),
+  user: userMod,
 };
 
-// Wire the application
-const app = wireApp(units);
+const app = await wireUp(defs);
 
 // Access units at root level
 const root = app();
 console.log(`Server: ${root.config.host}:${root.config.port}`);
 
 // Access units inside a block
-const db = app("database");
-console.log("DB URL:", db.connection.url);
+const userService = app("user");
+userService.addUser("John", "john@example.com");
 ```
 
 ## 📚 Core Concepts
@@ -85,7 +88,7 @@ export function doSomething() {
 doSomething.isFactory = true as const;
 ```
 
-To be able to resolve async factory functions or the ones that return a promise
+To be able to resolve async factory functions or the ones that return a promise,
 add the flag `isAsync`:
 
 ```ts
@@ -93,7 +96,7 @@ export function doSomething() {
   // does something
 }
 doSomething.isFactory = true as const;
-doSomething.isFactory = true as const;
+doSomething.isAsync = true as const;
 ```
 
 Example:
@@ -109,14 +112,6 @@ export function ping() {
   return "pong";
 }
 
-// plain function with injection
-export async function addPost(entry: Entry) {
-  const authorize = inject("auth.service").authorize;
-  const postRepo = inject(".").repo;
-  await authorize(entry.author);
-  await postRepo.insert(entry);
-}
-
 // factory function
 export function queryUser() {
   const db = getDbConnector();
@@ -130,80 +125,83 @@ queryUser.isFactory = true as const;
 
 ### Blocks
 
-Blocks are groups of units and other blocks. Use createBlock to create one, then
-compose it into other blocks or your app’s root definition by destructuring its
-result.
+Blocks are groups of units and other blocks. To create a block:
+
+1. Export a `$` variable using `tagBlock("blockName")` from your module
+2. Export your units as individual exports (not in objects)
+3. Import and use the module in your `wireUp` call
 
 ```ts
-// userModule.ts
-import { createBlock } from "wiremap";
+// userMod.ts
+import { tagBlock } from "wiremap";
 
-import * as userService from "./userService";
-import * as userRepo from "./userRepo";
+export const $ = tagBlock("user");
+export const addUser = (name: string, email: string) => ({ name, email, id: Math.random() });
+export const getUsers = () => [];
+export const deleteUser = (id: string) => { /* delete logic */ };
 
-export default createBlock("userModule", {
-  ...createBlock("service", userService),
-  ...createBlock("repo", userRepo),
-});
+// Nested blocks - blocks can contain other blocks
+// authMod.ts  
+export const $ = tagBlock("user.auth");
+export const login = (credentials: any) => { /* auth logic */ };
+export const logout = () => { /* logout logic */ };
 ```
+
+The block name in `tagBlock()` must match the path used when accessing it via the wire function.
 
 ### App
 
-To wire an app, pass an object containing all your units and blocks to
-`wireApp`.
+To wire an app, pass an object containing all your units and imported block modules to `wireUp`.
 
-If any unit is an async factory, `wireApp` will return a Promise.
+If any unit is an async factory, `wireUp` will return a Promise.
 
 ```ts
-import { wireApp } from "wiremap";
+import { wireUp, type InferBlocks } from "wiremap";
+import * as userMod from "./userMod.ts";
+import * as postMod from "./postMod.ts";
 
-import userModule from "./userModule";
-
-const units = {
+const defs = {
   config: { port: 3000 },
-  ...userModule,
+  user: userMod,
+  post: postMod,
 };
-export type Units = typeof units;
 
-const appInjector = wireApp(units);
+export type Defs = InferBlocks<typeof defs>;
 
-const root = appInjector();
+const app = await wireUp(defs);
+
+const root = app();
 console.log(`App running on port ${root.config.port}`);
 
-const userService = appInjector("user.service");
-const getUser = userService.getUser;
+const userService = app("user.service");
+userService.addUser("John", "john@example.com");
 ```
 
-### Injectors
+### Wire Functions
 
-Wiremap injectors are strongly typed functions that let you access your units.
+The `wireUp` function returns a strongly typed wire function that lets you access your units.
 
-You can use injectors in three main ways:
+You can use the wire function in three main ways:
 
-- Root injector: Access top-level units by passing nothing to `createInjector`
-- Local injector: Access units from the same block by passing `"."` to
-  `createInjector`
-- Scoped Injector: Resolves a block absolutely with full block path
-  `"some.block.path"`
+- **Root access**: Call with no arguments `app()` to access top-level units
+- **Local access**: Call with `"."` to access units from the same block (when used within a block context)
+- **Block access**: Call with block path `"user.service"` to access units from specific blocks
 
 Example:
 
 ```ts
-// userService.ts
-import { createInjector } from "wiremap";
-import type { Units } from "./app";
+const app = await wireUp(defs);
 
-const serviceInjector = createInjector<Units>()("userModule.service");
+// Access root-level units
+const config = app().config;
 
-// access units from same block
-const getUser = serviceInjector(".").getUser;
-// access units from root-level
-const configAgain = serviceInjector().config;
-// access units from another block
-const postArticle = serviceInjector("postModule.service").postArticle;
+// Access units from specific blocks
+const userService = app("user.service");
+const postService = app("post.service");
+
+// Type inference works automatically
+userService.addUser("name", "email"); // fully typed
 ```
-
-Wiring an app will return the root level injector
 
 ## 🧪 Testing
 
