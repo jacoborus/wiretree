@@ -39,30 +39,29 @@ type ExtractBlockKeys<T> = {
 }[keyof T];
 
 /**
- * Wires up a block of unit definitions, and other blocks.
+ * Wires up a set of unit definitions and blocks for dependency injection.
  *
- * @param defs - Object containing unit definitions, where keys are unit names and values are factories or values
- * @returns Promise<Wire> if async factory units exist, otherwise Wire for synchronous resolution
+ * To create a block, export a `$` variable from your module using `tagBlock("blockName")`.
+ * All exported properties (except `$`) become units of the block.
+ *
+ * @param defs - Object containing unit definitions and imported blocks. Each block should export a `$` tag via `tagBlock`.
+ * @returns Promise<Wire> if any async factory units exist, otherwise Wire for synchronous resolution.
  * @example
- * // Define your units
- * const units = {
- *   config: { port: 3000, host: "localhost" },
- *   ...createBlock("database", {
- *     connection: () => ({ url: "mongodb://localhost" }),
- *     users: [],
- *   }),
+ * ```ts
+ * // In app.ts:
+ * import * as userMod from "./userMod.ts";
+ * const defs = {
+ *   config: { port: 3000 },
+ *   userService: userMod
  * };
+ * const app = wireUp(defs);
  *
- * // Wire the application
- * const app = wireUp(units);
+ * // Access root units
+ * console.log(app().config.port); // 3000
  *
- * // Access units at root level
- * const root = app();
- * console.log(root.config.port); // 3000
- *
- * // Access units inside a block
- * const db = app("database");
- * console.log(db.connection.url); // "mongodb://localhost"
+ * // Access block units
+ * app("user.service").addUser("name", "email");
+ * ```
  */
 export function wireUp<Defs extends Hashmap>(
   defs: Defs,
@@ -89,6 +88,15 @@ export function wireUp<Defs extends Hashmap>(
 
 // type Unpack<T> = { [K in keyof T]: Unpack<T[K]> };
 
+/**
+ * Infers the structure of all blocks and units from a definitions object.
+ *
+ * Use this type to get the correct typings for your wired app.
+ *
+ * @example
+ * const defs = { user: userMod, config: { port: 3000 } };
+ * export type Defs = InferBlocks<typeof defs>;
+ */
 export type InferBlocks<R extends Hashmap> = {
   [K in BlockPaths<R>]: K extends "" ? R : PathValue<R, K>;
 };
@@ -233,6 +241,33 @@ interface BlockTag<N extends string> {
   feed: (defs: Hashmap) => void;
 }
 
+/**
+ * Creates a block tag for a module, enabling it to be wired as a block.
+ *
+ * Export the result as `$` from your module to mark it as a block.
+ * All other exports become units of the block.
+ *
+ * @param namespace - The name/path of the block (should match the key used in wireUp).
+ * @returns BlockTag object to be exported as `$`.
+ * @example
+ * ```ts
+ * // In userMod.ts:
+ * import * as userService from "./userService.ts"
+ * export const $ = tagBlock("user");
+ * export const service = userService
+ *
+ * // In userService.ts:
+ * export const $ = tagBlock("user.service");
+ * export function addUser () {...}
+ * export function getUsers () {...}
+ *
+ * // In app.ts:
+ * import * as userMod from "./userMod.ts";
+ * const defs = { user: userMod };
+ * const app = wireUp(defs);
+ * app("user.service").addUser(...);
+ * ```
+ */
 export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
   const blockDefs: BlocksMap = {};
 
@@ -385,9 +420,7 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
   );
 }
 
-/**
- * Extracts the paths of the units of a block.
- */
+/** Extracts the paths of the units of a block. */
 function getBlockUnitPaths<B extends Hashmap, Local extends boolean>(
   blockDef: B,
   local: Local,
@@ -425,7 +458,6 @@ function isFactory<T>(unit: unknown): unit is Factory<T> {
   if (!isFunction(unit) && !isPromise(unit)) {
     return false;
   }
-
   return "isFactory" in unit && unit.isFactory === true;
 }
 
