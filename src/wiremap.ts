@@ -1,9 +1,8 @@
 type Hashmap = Record<string, unknown>;
-type BlocksMap = Record<string, Block<Hashmap>>;
-
 type Block<T extends Hashmap> = T & {
   $: BlockTag<string>;
 };
+type BlocksMap = Record<string, Block<Hashmap>>;
 
 const blockSymbol = Symbol("BlockSymbol");
 let unitCache: Hashmap = {};
@@ -72,7 +71,7 @@ export function wireUp<Defs extends Hashmap>(
 
   unitCache = {};
   proxiesCache = new Map();
-  feedBlockTags(blockDefinitions as BlocksMap);
+  feedBlockTags(blockDefinitions);
   const wire = prepareWire("", blockDefinitions);
 
   if (hasAsyncKeys(blockDefinitions)) {
@@ -83,10 +82,8 @@ export function wireUp<Defs extends Hashmap>(
     >;
   }
 
-  return wire as unknown as WiredUp<InferBlocks<Defs>>;
+  return wire as WiredUp<InferBlocks<Defs>>;
 }
-
-// type Unpack<T> = { [K in keyof T]: Unpack<T[K]> };
 
 /**
  * Infers the structure of all blocks and units from a definitions object.
@@ -107,9 +104,21 @@ type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
     ? PathValue<T[K], Rest>
     : never
   : P extends keyof T
-    ? T[P]
+    ? T[P] extends Block<Hashmap>
+      ? T[P]
+      : never
     : never;
 
+/**
+ * Extracts the dot composed paths of the blocks that contain units
+ *
+ * BlockPaths<{
+ *   a: 1,
+ *   "b.c": 2,
+ *   "b.d": 3,
+ *   "b.e.f.other": 3,
+ * }> // "b" | "b.e.f":
+ */
 type BlockPaths<T extends Hashmap, P extends string = ""> =
   | ""
   | {
@@ -154,12 +163,12 @@ function mapBlocks<L extends Hashmap>(blocks: L, prefix?: string): BlocksMap {
 
       // only blocks with units are wireable
       if (hasUnits(block)) {
-        mapped[tagName] = block;
+        mapped[finalKey] = block;
       }
 
       // loop through sub-blocks
       if (hasBlocks(block)) {
-        const subBlocks = mapBlocks(block as Hashmap, finalKey);
+        const subBlocks = mapBlocks(block, finalKey);
         Object.assign(mapped, subBlocks);
       }
     }
@@ -182,7 +191,7 @@ type HasUnits<T extends Hashmap> = true extends {
 function hasUnits(item: Block<Hashmap>): boolean {
   return Object.keys(item).some((key) => {
     if (isBlockTag(item[key])) return false;
-    return !itemIsBlock(item[key as keyof typeof item]);
+    return !itemIsBlock(item[key]);
   });
 }
 
@@ -330,15 +339,15 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
     if (k === ".") {
       // local block resolution, exposes private units
 
-      proxy = createBlockProxy(blockDefs[localPath] as Block<Hashmap>, true);
+      proxy = createBlockProxy(blockDefs[localPath], true);
     } else if (k === "") {
       // root block resolution
 
-      proxy = createBlockProxy(blockDefs[""] as Block<Hashmap>, false);
+      proxy = createBlockProxy(blockDefs[""], false);
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
 
-      proxy = createBlockProxy(blockDefs[k] as Block<Hashmap>, false);
+      proxy = createBlockProxy(blockDefs[k], false);
     } else {
       throw new Error(`Unit ${k} not found from block "${parent}"`);
     }
