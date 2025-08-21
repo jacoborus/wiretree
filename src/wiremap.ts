@@ -23,14 +23,21 @@ type ContainsAsyncFactory<T extends Hashmap> = {
   : false;
 
 interface Wire<D extends Hashmap, N extends string> {
-  (): BlockProxy<Omit<D[""], "$" | ExtractBlockKeys<D[""]>>, false>;
+  // root block resolution
+  (): BlockProxy<ExtractUnitValues<D, "">, false>;
+  // local and absolute block resolution
   <K extends "." | keyof D>(
     blockPath?: K,
   ): BlockProxy<
-    Omit<D[K extends "." ? N : K], "$" | ExtractBlockKeys<D[""]>>,
-    N extends K ? true : false
+    ExtractUnitValues<D, K extends "." ? N : K>,
+    K extends `.${string}` ? true : false
   >;
 }
+
+type ExtractUnitValues<H extends Hashmap, K extends keyof H> = Omit<
+  H[K],
+  "$" | ExtractBlockKeys<H[K]>
+>;
 
 /** From an object, extract the keys that contain blocks */
 type ExtractBlockKeys<T> = {
