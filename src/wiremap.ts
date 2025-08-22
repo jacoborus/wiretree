@@ -5,9 +5,6 @@ type Block<T extends Hashmap> = T & {
 type BlocksMap = Record<string, Block<Hashmap>>;
 
 const blockSymbol = Symbol("BlockSymbol");
-const unitCache = new Map<string, unknown>();
-const proxiesCache = new Map<string, unknown>();
-const localProxiesCache = new Map<string, unknown>();
 
 type WiredUp<Defs extends Hashmap> =
   AnyItemContainsAnyAsyncFactory<Defs> extends true
@@ -45,6 +42,11 @@ type ExtractBlockKeys<T> = {
   [K in keyof T]: T[K] extends Block<Hashmap> ? K : never;
 }[keyof T];
 
+interface Wcache {
+  unit: Map<string, unknown>;
+  proxy: Map<string, unknown>;
+  localProxy: Map<string, unknown>;
+}
 /**
  * Wires up a set of unit definitions and blocks for dependency injection.
  *
@@ -77,18 +79,22 @@ export function wireUp<Defs extends Hashmap>(
   const blockDefinitions = mapBlocks(finalDefinitions);
   blockDefinitions[""] = finalDefinitions;
 
-  unitCache.clear();
-  proxiesCache.clear();
-  localProxiesCache.clear();
-  feedBlockTags(blockDefinitions);
-  const wire = prepareWire("", blockDefinitions);
+  const cache: Wcache = {
+    unit: new Map<string, unknown>(),
+    proxy: new Map<string, unknown>(),
+    localProxy: new Map<string, Hashmap>(),
+  };
+
+  feedBlockTags(blockDefinitions, cache);
+
+  const wire = prepareWire("", blockDefinitions, cache);
 
   if (hasAsyncKeys(blockDefinitions)) {
     // This will cause wireUp to return a promise that resolves
     // when all async factories are resolved
-    return resolveAsyncFactories(blockDefinitions).then(() => wire) as WiredUp<
-      InferBlocks<Defs>
-    >;
+    return resolveAsyncFactories(blockDefinitions, cache).then(
+      () => wire,
+    ) as WiredUp<InferBlocks<Defs>>;
   }
 
   return wire as WiredUp<InferBlocks<Defs>>;
@@ -228,15 +234,18 @@ function hasAsyncKeys(blockDefs: BlocksMap): boolean {
   });
 }
 
-function feedBlockTags(defs: BlocksMap): void {
+function feedBlockTags(defs: BlocksMap, cache: Wcache): void {
   const blockPaths = Object.keys(defs);
   blockPaths.forEach((path) => {
     const block = defs[path];
-    block.$.feed(defs);
+    block.$.feed(defs, cache);
   });
 }
 
-async function resolveAsyncFactories(defs: BlocksMap): Promise<void> {
+async function resolveAsyncFactories(
+  defs: BlocksMap,
+  cache: Wcache,
+): Promise<void> {
   const blockKeys = Object.keys(defs);
 
   for await (const blockKey of blockKeys) {
@@ -248,7 +257,7 @@ async function resolveAsyncFactories(defs: BlocksMap): Promise<void> {
       if ((isFunction(item) || isPromise(item)) && isFactory(item)) {
         const finalKey = blockKey === "" ? key : `${blockKey}.${key}`;
         const resolved = await item();
-        unitCache.set(finalKey, resolved);
+        cache.unit.set(finalKey, resolved);
       }
     }
   }
@@ -257,7 +266,7 @@ async function resolveAsyncFactories(defs: BlocksMap): Promise<void> {
 interface BlockTag<N extends string> {
   <L extends Hashmap>(): Wire<L, N>;
   readonly [blockSymbol]: N;
-  feed: (defs: Hashmap) => void;
+  feed: (defs: Hashmap, cache: Wcache) => void;
 }
 
 /**
@@ -289,17 +298,23 @@ interface BlockTag<N extends string> {
  */
 export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
   const blockDefs: BlocksMap = {};
+  const cache = {
+    unit: new Map(),
+    proxy: new Map(),
+    localProxy: new Map(),
+  };
 
   return Object.assign(
     function f<Defs extends Hashmap>(): Wire<Defs, N> {
-      return prepareWire(namespace, blockDefs) as Wire<Defs, N>;
+      return prepareWire(namespace, blockDefs, cache) as Wire<Defs, N>;
     },
     {
       get [blockSymbol]() {
         return namespace;
       },
-      feed(defs: Hashmap) {
+      feed(defs: Hashmap, newCache: Wcache) {
         Object.assign(blockDefs, defs);
+        Object.assign(cache, newCache);
       },
     },
   ) as BlockTag<N>;
@@ -331,19 +346,20 @@ function isBlockTag(thing: unknown): thing is BlockTag<string> {
 function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
   localPath: P,
   blockDefs: Defs,
+  cache: Wcache,
 ) {
   return function createWire(key = "") {
-    if (proxiesCache.has(key)) {
-      return proxiesCache.get(key);
+    if (cache.proxy.has(key)) {
+      return cache.proxy.get(key);
     }
 
     if (key === ".") {
-      if (localProxiesCache.has(localPath as string)) {
-        return localProxiesCache.get(localPath as string);
+      if (cache.localProxy.has(localPath as string)) {
+        return cache.localProxy.get(localPath as string);
       }
 
-      const localProxy = createBlockProxy(blockDefs[localPath], true);
-      localProxiesCache.set(localPath as string, localProxy);
+      const localProxy = createBlockProxy(blockDefs[localPath], true, cache);
+      cache.localProxy.set(localPath as string, localProxy);
       return localProxy;
     }
 
@@ -354,15 +370,15 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
 
     if (k === "") {
       // root block resolution
-      proxy = createBlockProxy(blockDefs[""], false);
+      proxy = createBlockProxy(blockDefs[""], false, cache);
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(blockDefs[k], false);
+      proxy = createBlockProxy(blockDefs[k], false, cache);
     } else {
       throw new Error(`Unit ${k} not found from block "${parent}"`);
     }
 
-    proxiesCache.set(k, proxy);
+    cache.proxy.set(k, proxy);
     return proxy;
   };
 }
@@ -381,6 +397,7 @@ type InferPublicUnitValue<D> = D extends PrivateUnit
 function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
   blockDef: B,
   local: Local,
+  cache: Wcache,
 ) {
   const unitKeys = getBlockUnitPaths(blockDef, local);
   const blockPath = getBlockTagName(blockDef.$);
@@ -398,8 +415,8 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
         }
 
         const finalKey = `${blockPath}.${prop}`;
-        if (unitCache.has(finalKey)) {
-          const unit = unitCache.get(finalKey);
+        if (cache.unit.has(finalKey)) {
+          const unit = cache.unit.get(finalKey);
           cachedblock[prop] = unit;
           return unit;
         }
@@ -415,7 +432,7 @@ function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
           const unit = isFactory(def) ? def() : def;
 
           cachedblock[prop] = unit;
-          unitCache.set(finalKey, unit);
+          cache.unit.set(finalKey, unit);
           return def;
         }
 
