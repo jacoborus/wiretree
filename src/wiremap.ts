@@ -75,7 +75,10 @@ interface Wcache {
 export function wireUp<Defs extends Hashmap>(
   defs: Defs,
 ): WiredUp<InferBlocks<Defs>> {
-  const finalDefinitions = Object.assign(defs, { $: tagBlock("") });
+  const finalDefinitions =
+    "$" in defs
+      ? (defs as Block<Hashmap>)
+      : Object.assign(defs, { $: tagBlock("") });
   const blockDefinitions = mapBlocks(finalDefinitions);
   blockDefinitions[""] = finalDefinitions;
 
@@ -342,7 +345,8 @@ function getBlockTagName<N extends string, T extends BlockTag<N>>(tag: T): N {
 
 function isBlockTag(thing: unknown): thing is BlockTag<string> {
   return (
-    typeof thing === "function" &&
+    (typeof thing === "function" || typeof thing === "object") &&
+    thing !== null &&
     blockSymbol in thing &&
     typeof thing[blockSymbol] === "string"
   );
@@ -411,7 +415,8 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
   cache: Wcache,
 ) {
   const blockDef = blockDefs[blockPath];
-  const unitKeys = getBlockUnitPaths(blockDef, local);
+  const unitKeys = getBlockUnitKeys(blockDef, local);
+  console.log({ unitKeys });
 
   return new Proxy(
     {}, // used as a cache for the block
@@ -434,11 +439,6 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
 
         if (unitKeys.includes(prop)) {
           const def = blockDef[prop];
-
-          const d = def;
-          if (itemIsBlock(d)) {
-            throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
-          }
 
           const unit = isFactory(def) ? def() : def;
 
@@ -467,14 +467,14 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
 }
 
 /** Extracts the paths of the units of a block. */
-function getBlockUnitPaths<B extends Hashmap, Local extends boolean>(
+function getBlockUnitKeys<B extends Hashmap, Local extends boolean>(
   blockDef: B,
   local: Local,
 ) {
   return Object.keys(blockDef).filter((key) => {
-    const def = blockDef[key];
-    if (isBlockTag(def)) return false;
-    return local ? true : !isPrivate(def) ? true : false;
+    const unit = blockDef[key];
+    if (itemIsBlock(unit) || isBlockTag(unit)) return false;
+    return local ? true : !isPrivate(unit) ? true : false;
   });
 }
 
