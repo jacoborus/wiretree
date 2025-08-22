@@ -79,11 +79,7 @@ export function wireUp<Defs extends Hashmap>(
   const blockDefinitions = mapBlocks(finalDefinitions);
   blockDefinitions[""] = finalDefinitions;
 
-  const cache: Wcache = {
-    unit: new Map<string, unknown>(),
-    proxy: new Map<string, unknown>(),
-    localProxy: new Map<string, Hashmap>(),
-  };
+  const cache = createCacheObject();
 
   feedBlockTags(blockDefinitions, cache);
 
@@ -266,7 +262,15 @@ async function resolveAsyncFactories(
 interface BlockTag<N extends string> {
   <L extends Hashmap>(): Wire<L, N>;
   readonly [blockSymbol]: N;
-  feed: (defs: Hashmap, cache: Wcache) => void;
+  feed: (defs: Hashmap, cache?: Wcache) => void;
+}
+
+function createCacheObject(): Wcache {
+  return {
+    unit: new Map(),
+    proxy: new Map(),
+    localProxy: new Map(),
+  };
 }
 
 /**
@@ -312,9 +316,10 @@ export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
       get [blockSymbol]() {
         return namespace;
       },
-      feed(defs: Hashmap, newCache: Wcache) {
+      feed(defs: Hashmap, newCache?: Wcache) {
         Object.assign(blockDefs, defs);
-        Object.assign(cache, newCache);
+        const reCache = newCache ? newCache : createCacheObject();
+        Object.assign(cache, reCache);
       },
     },
   ) as BlockTag<N>;
@@ -358,7 +363,12 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
         return cache.localProxy.get(localPath as string);
       }
 
-      const localProxy = createBlockProxy(blockDefs[localPath], true, cache);
+      const localProxy = createBlockProxy(
+        localPath as string,
+        true,
+        blockDefs,
+        cache,
+      );
       cache.localProxy.set(localPath as string, localProxy);
       return localProxy;
     }
@@ -370,12 +380,12 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
 
     if (k === "") {
       // root block resolution
-      proxy = createBlockProxy(blockDefs[""], false, cache);
+      proxy = createBlockProxy("", false, blockDefs, cache);
     } else if (blockPaths.includes(k)) {
       // external block resolution, uses absolute path of the block
-      proxy = createBlockProxy(blockDefs[k], false, cache);
+      proxy = createBlockProxy(k, false, blockDefs, cache);
     } else {
-      throw new Error(`Unit ${k} not found from block "${parent}"`);
+      throw new Error(`Unit ${k} not found from block "${String(localPath)}"`);
     }
 
     cache.proxy.set(k, proxy);
@@ -394,13 +404,14 @@ type InferPublicUnitValue<D> = D extends PrivateUnit
   ? never
   : InferUnitValue<D>;
 
-function createBlockProxy<B extends Block<Hashmap>, Local extends boolean>(
-  blockDef: B,
+function createBlockProxy<B extends BlocksMap, Local extends boolean>(
+  blockPath: string,
   local: Local,
+  blockDefs: B,
   cache: Wcache,
 ) {
+  const blockDef = blockDefs[blockPath];
   const unitKeys = getBlockUnitPaths(blockDef, local);
-  const blockPath = getBlockTagName(blockDef.$);
 
   return new Proxy(
     {}, // used as a cache for the block
