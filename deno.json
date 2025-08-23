@@ -6,7 +6,8 @@
   "exports": "./src/wiremap.ts",
   "tasks": {
     "test": "deno test",
-    "lint": "deno lint --unstable src demo",
+    "lint": "deno lint src demo",
+    "check": "deno check src demo",
     "fmt": "deno fmt --check src demo"
   },
   "publish": {
