@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import { tagBlock, wireUp, type InferBlocks } from "./wiremap.ts";
 
-Deno.test("wireUp resolves dependencies", async () => {
+Deno.test("wireUp resolves dependencies", () => {
   const defs = {
     key: "value",
     nested: {
@@ -11,7 +11,7 @@ Deno.test("wireUp resolves dependencies", async () => {
     },
   };
 
-  const app = await wireUp(defs);
+  const app = wireUp(defs);
 
   const keys = Object.keys(app());
   assertEquals(keys.length, 1, "block proxies are ennumerable");
@@ -40,22 +40,21 @@ Deno.test("wireUp resolves async factories that return a promise", async () => {
   const defs = {
     $,
     keyName: "value",
+    factoryFn,
     nested: {
       $: tagBlock("nested"),
       subKey: "subValue",
     },
-    factoryFn,
   };
 
-  // @ts-ignore: this is just for the internal test
   const app = await wireUp(defs);
 
-  assertEquals(app().keyName, "value");
+  assertEquals(app().keyName, "thekey");
   assertEquals(app("nested").subKey, "subValue");
   assertEquals(app().factoryFn, "value");
 });
 
-Deno.test("block creates namespaced definitions", async () => {
+Deno.test("block creates namespaced definitions", () => {
   const blockInstance = {
     $: tagBlock("@parent.namespace"),
     key: 5,
@@ -67,7 +66,7 @@ Deno.test("block creates namespaced definitions", async () => {
     namespace: blockInstance,
   };
 
-  const mainWire = await wireUp({ "@parent": blockParent });
+  const mainWire = wireUp({ "@parent": blockParent });
 
   assertEquals(mainWire("@parent.namespace").key, 5);
   assertEquals(mainWire("@parent.namespace").key2, 6);

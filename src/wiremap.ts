@@ -11,12 +11,15 @@ type WiredUp<Defs extends Hashmap> =
     ? Promise<Wire<Defs, "">>
     : Wire<Defs, "">;
 
-type AnyItemContainsAnyAsyncFactory<R extends Hashmap> =
-  R[keyof R] extends Hashmap ? ContainsAsyncFactory<R[keyof R]> : false;
+type AnyItemContainsAnyAsyncFactory<R extends Hashmap> = true extends {
+  [K in keyof R]: R[K] extends Hashmap ? ContainsAsyncFactory<R[K]> : false;
+}[keyof R]
+  ? true
+  : false;
 
-type ContainsAsyncFactory<T extends Hashmap> = {
+type ContainsAsyncFactory<T extends Hashmap> = true extends {
   [K in keyof T]: IsAsyncFactory<T[K]>;
-}[keyof T] extends true
+}[keyof T]
   ? true
   : false;
 
@@ -28,7 +31,7 @@ interface Wire<D extends Hashmap, N extends string> {
     blockPath?: K,
   ): BlockProxy<
     ExtractUnitValues<D, K extends "." ? N : K>,
-    K extends `.${string}` ? true : false
+    K extends "." ? true : false
   >;
 }
 
