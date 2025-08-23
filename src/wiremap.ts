@@ -1,28 +1,55 @@
+/**
+ * Represents an object with string keys and any values.
+ */
 type Hashmap = Record<string, unknown>;
+
+/**
+ * A block is a Hashmap with a block tag ($) that identifies its namespace.
+ */
 type Block<T extends Hashmap> = T & {
   $: BlockTag<string>;
 };
+
+/**
+ * Map of block names to their block definitions.
+ */
 type BlocksMap = Record<string, Block<Hashmap>>;
 
 const blockSymbol = Symbol("BlockSymbol");
 
+/**
+ * Determines the return type of wireUp - returns Promise<Wire> if any async factories exist.
+ */
 type WiredUp<Defs extends Hashmap> =
   AnyItemContainsAnyAsyncFactory<Defs> extends true
     ? Promise<Wire<Defs, "">>
     : Wire<Defs, "">;
 
+/**
+ * Recursively checks if any item in the definitions contains an async factory.
+ * This determines whether wireUp should return a Promise or not.
+ */
 type AnyItemContainsAnyAsyncFactory<R extends Hashmap> = true extends {
   [K in keyof R]: R[K] extends Hashmap ? ContainsAsyncFactory<R[K]> : false;
 }[keyof R]
   ? true
   : false;
 
+/**
+ * Checks if a specific object contains any async factory functions.
+ */
 type ContainsAsyncFactory<T extends Hashmap> = true extends {
   [K in keyof T]: IsAsyncFactory<T[K]>;
 }[keyof T]
   ? true
   : false;
 
+/**
+ * The main wire function interface that provides different access patterns:
+ * - () returns root block proxy
+ * - (".") returns local block proxy (same block context)
+ * - ("path") returns specific block proxy
+ */
 interface Wire<D extends Hashmap, N extends string> {
   // root block resolution
   (): BlockProxy<ExtractUnitValues<D, "">, false>;
@@ -35,16 +62,25 @@ interface Wire<D extends Hashmap, N extends string> {
   >;
 }
 
+/**
+ * Extracts unit values from a block, excluding the block tag ($) and any nested blocks.
+ */
 type ExtractUnitValues<H extends Hashmap, K extends keyof H> = Omit<
   H[K],
   "$" | ExtractBlockKeys<H[K]>
 >;
 
-/** From an object, extract the keys that contain blocks */
+/**
+ * From an object, extract the keys that contain blocks.
+ * This is used to filter out nested blocks when creating unit proxies.
+ */
 type ExtractBlockKeys<T> = {
   [K in keyof T]: T[K] extends Block<Hashmap> ? K : never;
 }[keyof T];
 
+/**
+ * Cache structure for storing resolved units and proxies to avoid recomputation.
+ */
 interface Wcache {
   unit: Map<string, unknown>;
   proxy: Map<string, unknown>;
@@ -113,7 +149,14 @@ export type InferBlocks<R extends Hashmap> = {
   [K in BlockPaths<R>]: K extends "" ? R : PathValue<R, K>;
 };
 
-// Access type by a dot notated path
+/**
+ * Access type by a dot notated path.
+ * Recursively traverses an object type following a dot-separated path.
+ *
+ * @example
+ * PathValue<{ user: { service: { getUser: () => User } } }, "user.service">
+ * // Returns: { getUser: () => User }
+ */
 type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
   ? K extends keyof T
     ? PathValue<T[K], Rest>
@@ -125,14 +168,19 @@ type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
     : never;
 
 /**
- * Extracts the dot composed paths of the blocks that contain units
+ * Extracts the dot composed paths of the blocks that contain units.
+ * This generates all valid block paths that can be accessed via the wire function.
  *
+ * @example
  * BlockPaths<{
- *   a: 1,
- *   "b.c": 2,
- *   "b.d": 3,
- *   "b.e.f.other": 3,
- * }> // "b" | "b.e.f":
+ *   a: Block<{someUnit: string}>,
+ *   b: {
+ *     c: Block<{otherUnit: number}>,
+ *     d: Block<{thirdUnit: boolean}>,
+ *     other: 4
+ *   },
+ * }>
+ * // Returns: "" | "a" | "b.c" | "b.d"
  */
 type BlockPaths<T extends Hashmap, P extends string = ""> =
   | ""
@@ -192,7 +240,10 @@ function mapBlocks<L extends Hashmap>(blocks: L, prefix?: string): BlocksMap {
   return mapped;
 }
 
-/** Whether an object contains items that are neither blocks nor blockTags */
+/**
+ * Determines whether an object contains items that are neither blocks nor blockTags.
+ * Used to identify blocks that actually contain any unit
+ */
 type HasUnits<T extends Hashmap> = true extends {
   [K in keyof T]: IsBlock<T[K]> extends true
     ? false
@@ -210,7 +261,10 @@ function hasUnits(item: Block<Hashmap>): boolean {
   });
 }
 
-/** Whether an object contains items that are blocks */
+/**
+ * Determines whether an object contains items that are blocks.
+ * Used to identify if we need to recursively process nested blocks.
+ */
 type HasBlocks<T extends Hashmap> = true extends {
   [K in keyof T]: T[K] extends Block<Hashmap> ? true : false;
 }[keyof T]
@@ -263,6 +317,10 @@ async function resolveAsyncFactories(
   }
 }
 
+/**
+ * Block tag interface that enables a module to be wired as a block.
+ * Contains the wire function and metadata about the block's namespace.
+ */
 interface BlockTag<N extends string> {
   <L extends Hashmap>(): Wire<L, N>;
   readonly [blockSymbol]: N;
@@ -329,6 +387,9 @@ export function tagBlock<N extends string>(namespace: N): BlockTag<N> {
   ) as BlockTag<N>;
 }
 
+/**
+ * Type that checks if a given type is a block by looking for the block tag ($).
+ */
 type IsBlock<T> = T extends { $: { [blockSymbol]: string } } ? true : false;
 
 function itemIsBlock(item: unknown): item is Block<Hashmap> {
@@ -398,13 +459,23 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
   };
 }
 
+/**
+ * Block proxy type that provides access to units within a block.
+ * Local proxies include private units, while public proxies exclude them.
+ */
 type BlockProxy<B extends Hashmap, Local extends boolean> = Local extends true
   ? { [K in keyof B]: InferUnitValue<B[K]> }
   : { [K in keyof B]: InferPublicUnitValue<B[K]> };
 
+/**
+ * Infers the actual value type of a unit, resolving factories to their return types.
+ */
 type InferUnitValue<D> =
   D extends Factory<infer T> ? (T extends Promise<infer V> ? V : T) : D;
 
+/**
+ * Like InferUnitValue but excludes private units from the type.
+ */
 type InferPublicUnitValue<D> = D extends PrivateUnit
   ? never
   : InferUnitValue<D>;
@@ -494,6 +565,10 @@ function isFunction<T>(unit: unknown): unit is () => T {
   return typeof unit === "function";
 }
 
+/**
+ * Factory function interface. Factories are functions that return configured instances.
+ * They're called once and their result is cached.
+ */
 interface Factory<T> {
   (...args: unknown[]): T;
   (...args: unknown[]): Promise<T>;
@@ -507,6 +582,9 @@ function isFactory<T>(unit: unknown): unit is Factory<T> {
   return "isFactory" in unit && unit.isFactory === true;
 }
 
+/**
+ * Type that checks if a factory is async (returns a Promise or is marked as async).
+ */
 type IsAsyncFactory<T> =
   T extends Factory<unknown>
     ? T extends { isAsync: true }
@@ -526,6 +604,9 @@ function isAsyncFactory<T>(unit: T): boolean {
   return unit instanceof AsyncFunction;
 }
 
+/**
+ * Private unit interface. Private units are not accessible from outside their block.
+ */
 interface PrivateUnit extends Func {
   isPrivate: true;
 }
