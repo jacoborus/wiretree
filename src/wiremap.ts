@@ -427,14 +427,14 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
           throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
         }
 
-        const finalKey = blockPath === "" ? prop : `${blockPath}.${prop}`;
-        if (cache.unit.has(finalKey)) {
-          const unit = cache.unit.get(finalKey);
-          cachedblock[prop] = unit;
-          return unit;
-        }
-
         if (unitKeys.includes(prop)) {
+          const finalKey = blockPath === "" ? prop : `${blockPath}.${prop}`;
+          if (cache.unit.has(finalKey)) {
+            const unit = cache.unit.get(finalKey);
+            cachedblock[prop] = unit;
+            return unit;
+          }
+
           const def = blockDef[prop];
 
           const unit = isFactory(def) ? def() : def;
@@ -471,7 +471,7 @@ function getBlockUnitKeys<B extends Hashmap, Local extends boolean>(
   return Object.keys(blockDef).filter((key) => {
     const unit = blockDef[key];
     if (itemIsBlock(unit) || isBlockTag(unit)) return false;
-    return local ? true : !isPrivate(unit) ? true : false;
+    return local ? true : !isPrivate(unit);
   });
 }
 
