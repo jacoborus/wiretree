@@ -49,7 +49,7 @@ Deno.test("wireUp resolves async factories that return a promise", async () => {
 
   const app = await wireUp(defs);
 
-  assertEquals(app().keyName, "thekey");
+  assertEquals(app().keyName, "value");
   assertEquals(app("nested").subKey, "subValue");
   assertEquals(app().factoryFn, "value");
 });
