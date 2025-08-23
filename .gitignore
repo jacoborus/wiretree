@@ -3,3 +3,5 @@ dist/
 deno.lock
 package-lock.json
 .DS_Store
+AGENTS.md
+.vscode/
