@@ -1,85 +1,84 @@
 import { assertEquals } from "@std/assert";
-import {
-  createBlock,
-  createInjector,
-  mockFactory,
-  mockInjection,
-  wireApp,
-} from "./wiremap.ts";
+import { tagBlock, wireUp, type InferBlocks } from "./wiremap.ts";
 
-Deno.test("wireApp resolves dependencies", () => {
+Deno.test("wireUp resolves dependencies", async () => {
   const defs = {
     key: "value",
-    "@nested.subKey": "subValue",
-    "@nested.subKey2": "subValue2",
+    nested: {
+      $: tagBlock("nested"),
+      subKey: "subValue",
+      subKey2: "subValue2",
+    },
   };
 
-  const app = wireApp(defs);
+  const app = await wireUp(defs);
 
   const keys = Object.keys(app());
   assertEquals(keys.length, 1, "block proxies are ennumerable");
 
-  const nestedKeys = Object.keys(app("@nested"));
+  const nestedKeys = Object.keys(app("nested"));
   assertEquals(nestedKeys.length, 2, "nested block proxies are ennumerable");
 
   assertEquals(app().key, "value");
-  assertEquals(app("@nested").subKey, "subValue");
-  assertEquals(app("@nested").subKey2, "subValue2");
+  assertEquals(app("nested").subKey, "subValue");
+  assertEquals(app("nested").subKey2, "subValue2");
 });
 
-Deno.test(
-  "wireApp resolves async factories that return a promise",
-  async () => {
-    // @ts-ignore: this is just for the internal test
-    const inj = createInjector<typeof defs>()();
+Deno.test("wireUp resolves async factories that return a promise", async () => {
+  const $ = tagBlock("");
+  const wire = $<InferBlocks<typeof defs>>();
 
-    function factoryFn() {
-      const theKey = inj().key;
-      return new Promise((resolve) => {
-        resolve(theKey);
-      });
-    }
-    factoryFn.isFactory = true as const;
-    factoryFn.isAsync = true as const;
+  function factoryFn() {
+    const theKey = wire().keyName;
+    return new Promise((resolve) => {
+      resolve(theKey);
+    });
+  }
+  factoryFn.isFactory = true as const;
+  factoryFn.isAsync = true as const;
 
-    const defs = {
-      key: "value",
-      "@nested.subKey": "subValue",
-      factoryFn,
-    };
+  const defs = {
+    $,
+    keyName: "value",
+    nested: {
+      $: tagBlock("nested"),
+      subKey: "subValue",
+    },
+    factoryFn,
+  };
 
-    const app = await wireApp(defs);
+  // @ts-ignore: this is just for the internal test
+  const app = await wireUp(defs);
 
-    assertEquals(app().key, "value");
-    assertEquals(app("@nested").subKey, "subValue");
-    assertEquals(app(".").factoryFn, "value");
-  },
-);
+  assertEquals(app().keyName, "value");
+  assertEquals(app("nested").subKey, "subValue");
+  assertEquals(app().factoryFn, "value");
+});
 
-Deno.test("block creates namespaced definitions", () => {
-  wireApp({});
-  const blockInstance = createBlock("namespace", {
+Deno.test("block creates namespaced definitions", async () => {
+  const blockInstance = {
+    $: tagBlock("@parent.namespace"),
     key: 5,
     key2: 6,
-  });
+  };
 
-  const blockParent = createBlock("@parent", {
-    ...blockInstance,
-  });
+  const blockParent = {
+    $: tagBlock("@parent"),
+    namespace: blockInstance,
+  };
 
-  assertEquals(blockInstance["namespace.key"], 5);
-  assertEquals(blockInstance["namespace.key2"], 6);
-  assertEquals(blockParent["@parent.namespace.key"], 5);
-  assertEquals(blockParent["@parent.namespace.key2"], 6);
+  const mainWire = await wireUp({ "@parent": blockParent });
+
+  assertEquals(mainWire("@parent.namespace").key, 5);
+  assertEquals(mainWire("@parent.namespace").key2, 6);
 });
 
 Deno.test("error handling for missing dependencies", () => {
-  wireApp({});
   const defs = {
     key: "value",
   };
 
-  const app = wireApp(defs);
+  const app = wireUp(defs);
 
   try {
     try {
@@ -105,48 +104,56 @@ Deno.test("error handling for missing dependencies", () => {
 });
 
 Deno.test("mockInjection", () => {
-  wireApp({});
   const fakeUnits = {
-    "@test.service.getByEmail": (email: string) => {
-      assertEquals(email, "email");
-      return { email };
+    "@test.service": {
+      getByEmail: (email: string) => {
+        assertEquals(email, "email");
+        return { email };
+      },
     },
   };
 
-  const injector = createInjector<typeof fakeUnits>()("@test.service");
-  const getUserDefinition = (email: string) => {
+  const tag = tagBlock("@test.service");
+  tag.feed(fakeUnits);
+  const wire = tag<typeof fakeUnits>();
+
+  const getUser = (email: string) => {
     // const getByEmail = injector(".").getByEmail;
-    const getByEmail = injector("@test.service").getByEmail;
+    const getByEmail = wire("@test.service").getByEmail;
     return getByEmail(email);
   };
-
-  const getUser = mockInjection(getUserDefinition, fakeUnits);
 
   assertEquals(getUser("email").email, "email");
 });
 
 Deno.test("mockFactory", () => {
-  wireApp({});
   const fakeUnits = {
-    "@test.service.getByEmail": (email: string) => {
-      assertEquals(email, "email");
-      return { email };
+    "@test.service": {
+      getByEmail: (email: string) => {
+        assertEquals(email, "email");
+        return { email };
+      },
     },
   };
 
-  const inj = createInjector<typeof fakeUnits>()("@test.service");
+  const tag = tagBlock("@test.service");
+  tag.feed(fakeUnits);
+  const wire = tag<typeof fakeUnits>();
 
-  const getUser = mockFactory(() => {
-    const getByEmail = inj("@test.service").getByEmail;
+  const getUserFactory = () => {
+    const getByEmail = wire("@test.service").getByEmail;
     return (email: string) => getByEmail(email);
-  }, fakeUnits);
+  };
+  const getUser = getUserFactory();
 
   assertEquals(getUser("email").email, "email");
 });
 
-Deno.test("wireApp protects private units", () => {
-  const injA = createInjector<Defs>()("A");
-  const injB = createInjector<Defs>()("B");
+Deno.test("wireUp protects private units", () => {
+  const $A = tagBlock("A");
+  const wireA = $A<Defs>();
+  const $B = tagBlock("B");
+  const wireB = $B<Defs>();
 
   function priv() {
     return "private";
@@ -154,32 +161,38 @@ Deno.test("wireApp protects private units", () => {
   priv.isPrivate = true as const;
 
   function pub() {
-    const f = injA(".").priv;
+    const f = wireA(".").priv;
     return f();
   }
 
   function other() {
+    const f = wireB("A").priv;
     // @ts-ignore: this is just for the internal test
-    const f = injB("A").priv;
     return f();
   }
 
   const defs = {
-    "A.priv": priv,
-    "A.pub": pub,
-    "B.other": other,
+    A: {
+      $: $A,
+      priv,
+      pub,
+    },
+    B: {
+      $: $B,
+      other,
+    },
   };
   type Defs = typeof defs;
 
-  const rootInjector = wireApp(defs);
+  const main = wireUp(defs);
 
   assertEquals(
-    injA("A").priv(),
+    wireA(".").priv(),
     "private",
     "Private props are accesible from same block injector",
   );
   assertEquals(
-    injA("A").pub(),
+    wireA(".").pub(),
     "private",
     "Private props are accesible from other units of same block",
   );
@@ -187,11 +200,11 @@ Deno.test("wireApp protects private units", () => {
   let passedFromBlockInjector = false;
 
   try {
-    injB("B").other();
+    wireB(".").other();
     passedFromBlockInjector = true;
   } catch (e: unknown) {
     if (e instanceof Error) {
-      assertEquals(e.message, 'Key "priv" not found in block "A"');
+      assertEquals(e.message, `Block 'A' has no unit named 'priv'`);
     }
   }
 
@@ -205,11 +218,11 @@ Deno.test("wireApp protects private units", () => {
 
   try {
     // @ts-ignore: it's just for the internal test
-    rootInjector("A").priv;
+    main("A").priv;
     passedFromRootInjector = true;
   } catch (e: unknown) {
     if (e instanceof Error) {
-      assertEquals(e.message, 'Key "priv" not found in block "A"');
+      assertEquals(e.message, `Block 'A' has no unit named 'priv'`);
     }
   }
 
