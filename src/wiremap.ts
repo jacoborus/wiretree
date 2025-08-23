@@ -86,17 +86,15 @@ export function wireUp<Defs extends Hashmap>(
 
   feedBlockTags(blockDefinitions, cache);
 
-  const wire = prepareWire("", blockDefinitions, cache);
-
   if (hasAsyncKeys(blockDefinitions)) {
     // This will cause wireUp to return a promise that resolves
     // when all async factories are resolved
-    return resolveAsyncFactories(blockDefinitions, cache).then(
-      () => wire,
-    ) as WiredUp<InferBlocks<Defs>>;
+    return resolveAsyncFactories(blockDefinitions, cache).then(() => {
+      return prepareWire("", blockDefinitions, cache);
+    }) as WiredUp<InferBlocks<Defs>>;
   }
 
-  return wire as WiredUp<InferBlocks<Defs>>;
+  return prepareWire("", blockDefinitions, cache) as WiredUp<InferBlocks<Defs>>;
 }
 
 /**
@@ -416,7 +414,6 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
 ) {
   const blockDef = blockDefs[blockPath];
   const unitKeys = getBlockUnitKeys(blockDef, local);
-  console.log({ unitKeys });
 
   return new Proxy(
     {}, // used as a cache for the block
@@ -430,7 +427,7 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
           throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
         }
 
-        const finalKey = `${blockPath}.${prop}`;
+        const finalKey = blockPath === "" ? prop : `${blockPath}.${prop}`;
         if (cache.unit.has(finalKey)) {
           const unit = cache.unit.get(finalKey);
           cachedblock[prop] = unit;
