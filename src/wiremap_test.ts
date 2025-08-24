@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { tagBlock, wireUp, defineUnit, type InferBlocks } from "./wiremap.ts";
 
 Deno.test("wireUp resolves dependencies", () => {
@@ -236,7 +236,52 @@ Deno.test("defineUnit: no options", () => {
   const block = {
     $: tagBlock(""),
     valor: defineUnit(5),
+    o: {
+      $: tagBlock("o"),
+      /**  A value */
+      valor: defineUnit("hola"),
+    },
   };
   const main = wireUp(block);
   assertEquals(main().valor, 5);
+  assertEquals(main("o").valor, "hola");
+});
+
+Deno.test("defineUnit: isPrivate", () => {
+  const $ = tagBlock("");
+  const $a = tagBlock("a");
+  const $b = tagBlock("b");
+
+  const block = {
+    $,
+    valor: defineUnit(5),
+    a: {
+      $: $a,
+      valor: defineUnit("hola"),
+    },
+    b: {
+      $: $b,
+      valor: defineUnit("hola", { isPrivate: true }),
+    },
+  };
+  type Defs = InferBlocks<typeof block>;
+  const main = wireUp(block);
+  const awire = $a<Defs>();
+  const bwire = $b<Defs>();
+
+  assertEquals(main().valor, 5);
+  assertEquals(main("a").valor, "hola");
+  assertThrows(() => {
+    main("b").valor;
+  });
+
+  assertEquals(awire().valor, 5);
+  assertEquals(awire("a").valor, "hola");
+  assertThrows(() => {
+    awire("b").valor;
+  });
+
+  assertEquals(bwire().valor, 5);
+  assertEquals(bwire("a").valor, "hola");
+  assertEquals(bwire(".").valor, "hola");
 });

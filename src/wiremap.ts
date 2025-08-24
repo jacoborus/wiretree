@@ -576,7 +576,7 @@ interface UnitDef<U, O extends UnitOptions> {
 
 type IsUnitDef<T> = T extends UnitDef<unknown, UnitOptions> ? true : false;
 
-export function defineUnit<T, const O extends UnitOptions>(
+export function defineUnit<const T, const O extends UnitOptions>(
   def: T,
   opts = {} as O,
 ): UnitDef<T, O> {
@@ -653,6 +653,9 @@ function isPrivate(unit: unknown): unit is PrivateUnit {
   if (unit === null) return false;
   if (isFunction(unit) || isPromise(unit)) {
     return "isPrivate" in unit && unit.isPrivate === true;
+  }
+  if (isUnitDef(unit)) {
+    return !!unit.opts.isPrivate;
   }
   return false;
 }
