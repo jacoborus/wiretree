@@ -1,5 +1,6 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { tagBlock, wireUp, defineUnit, type InferBlocks } from "./wiremap.ts";
+import { tagBlock, wireUp, defineUnit } from "./wiremap.ts";
+import type { InferBlocks } from "./wiremap.ts";
 
 Deno.test("wireUp resolves dependencies", () => {
   const defs = {
@@ -165,8 +166,8 @@ Deno.test("wireUp protects private units", () => {
   }
 
   function other() {
-    const f = wireB("A").priv;
     // @ts-ignore: this is just for the internal test
+    const f = wireB("A").priv;
     return f();
   }
 
@@ -255,15 +256,19 @@ Deno.test("defineUnit: isPrivate", () => {
   const block = {
     $,
     valor: defineUnit(5),
+    o: 5,
     a: {
       $: $a,
       valor: defineUnit("hola"),
+      o: 5,
     },
     b: {
       $: $b,
       valor: defineUnit("hola", { isPrivate: true }),
+      o: 5,
     },
   };
+
   type Defs = InferBlocks<typeof block>;
   const main = wireUp(block);
   const awire = $a<Defs>();
@@ -272,12 +277,14 @@ Deno.test("defineUnit: isPrivate", () => {
   assertEquals(main().valor, 5);
   assertEquals(main("a").valor, "hola");
   assertThrows(() => {
+    // @ts-ignore: this is just for the internal test
     main("b").valor;
   });
 
   assertEquals(awire().valor, 5);
   assertEquals(awire("a").valor, "hola");
   assertThrows(() => {
+    // @ts-ignore: this is just for the internal test
     awire("b").valor;
   });
 

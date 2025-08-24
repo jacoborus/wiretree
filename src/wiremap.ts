@@ -53,23 +53,19 @@ type ContainsAsyncFactory<T extends Hashmap> = true extends {
  */
 interface Wire<D extends Hashmap, N extends string> {
   // root block resolution
-  (): BlockProxy<ExtractUnitValues<D, "">, false>;
-  // local and absolute block resolution
-  <K extends "." | keyof D>(
-    blockPath?: K,
-  ): BlockProxy<
-    ExtractUnitValues<D, K extends "." ? N : K>,
-    K extends "." ? true : false
-  >;
+  (): BlockProxy<FilterUnitValues<D[""]>, false>;
+  // local block resolution
+  <K extends ".">(blockPath: K): BlockProxy<FilterUnitValues<D[N]>, true>;
+  // absolute block resolution
+  <K extends keyof D>(blockPath: K): BlockProxy<FilterUnitValues<D[K]>, false>;
 }
 
 /**
- * Extracts unit values from a block, excluding the block tag ($) and any nested blocks.
+ * Filters an object excluding the block tag ($), and any nested blocks.
  */
-type ExtractUnitValues<H extends Hashmap, K extends keyof H> = Omit<
-  H[K],
-  "$" | ExtractBlockKeys<H[K]>
->;
+type FilterUnitValues<T> = T extends Hashmap
+  ? Omit<T, "$" | ExtractBlockKeys<T>>
+  : never;
 
 /**
  * From an object, extract the keys that contain blocks.
@@ -78,6 +74,10 @@ type ExtractUnitValues<H extends Hashmap, K extends keyof H> = Omit<
 type ExtractBlockKeys<T> = {
   [K in keyof T]: T[K] extends Block<Hashmap> ? K : never;
 }[keyof T];
+
+type ExtractPublicPaths<T> = T extends Hashmap //
+  ? { [K in keyof T]: true extends IsPrivateUnit<T[K]> ? never : K }[keyof T] //
+  : never;
 
 /**
  * Cache structure for storing resolved units and proxies to avoid recomputation.
@@ -466,7 +466,7 @@ function prepareWire<Defs extends BlocksMap, P extends keyof Defs>(
  */
 type BlockProxy<B extends Hashmap, Local extends boolean> = Local extends true
   ? { [K in keyof B]: InferUnitValue<B[K]> }
-  : { [K in keyof B]: InferPublicUnitValue<B[K]> };
+  : { [K in ExtractPublicPaths<B>]: InferPublicUnitValue<B[K]> };
 
 /**
  * Infers the actual value type of a unit, resolving factories to their return types.
@@ -476,16 +476,20 @@ type InferUnitValue<D> =
     ? T extends Promise<infer V>
       ? V
       : T
-    : D extends UnitDef<infer U, any>
+    : D extends UnitDef<infer U, UnitOptions>
       ? U
       : D;
 
 /**
  * Like InferUnitValue but excludes private units from the type.
  */
-type InferPublicUnitValue<D> = D extends PrivateUnit
+type InferPublicUnitValue<Def> = Def extends PrivateUnit
   ? never
-  : InferUnitValue<D>;
+  : Def extends UnitDef<infer Unit, infer Opts>
+    ? Opts["isPrivate"] extends true
+      ? never
+      : Unit
+    : InferUnitValue<Def>;
 
 function createBlockProxy<B extends BlocksMap, Local extends boolean>(
   blockPath: string,
@@ -574,8 +578,6 @@ interface UnitDef<U, O extends UnitOptions> {
   opts: O;
 }
 
-type IsUnitDef<T> = T extends UnitDef<unknown, UnitOptions> ? true : false;
-
 export function defineUnit<const T, const O extends UnitOptions>(
   def: T,
   opts = {} as O,
@@ -648,6 +650,14 @@ function isAsyncFactory<T>(unit: T): boolean {
 interface PrivateUnit extends Func {
   isPrivate: true;
 }
+
+type IsPrivateUnit<U> = U extends PrivateUnit
+  ? true
+  : U extends UnitDef<unknown, infer O>
+    ? O["isPrivate"] extends true
+      ? true
+      : false
+    : false;
 
 function isPrivate(unit: unknown): unit is PrivateUnit {
   if (unit === null) return false;
