@@ -313,6 +313,14 @@ async function resolveAsyncFactories(
         const finalKey = blockKey === "" ? key : `${blockKey}.${key}`;
         const resolved = await item();
         cache.unit.set(finalKey, resolved);
+      } else if (
+        (isFunctionDef(item) || isPromiseDef(item)) &&
+        isFactoryDef(item)
+      ) {
+        const finalKey = blockKey === "" ? key : `${blockKey}.${key}`;
+        // TODO: fix that type assertion
+        const resolved = await (item[unitSymbol] as () => unknown)();
+        cache.unit.set(finalKey, resolved);
       }
     }
   }
@@ -476,8 +484,12 @@ type InferUnitValue<D> =
     ? T extends Promise<infer V>
       ? V
       : T
-    : D extends UnitDef<infer U, UnitOptions>
-      ? U
+    : D extends UnitDef<infer U, infer O>
+      ? O["isFactory"] extends true
+        ? U extends Func
+          ? ReturnType<U>
+          : U
+        : U
       : D;
 
 /**
@@ -488,7 +500,11 @@ type InferPublicUnitValue<Def> = Def extends PrivateUnit
   : Def extends UnitDef<infer Unit, infer Opts>
     ? Opts["isPrivate"] extends true
       ? never
-      : Unit
+      : Opts["isFactory"] extends true
+        ? Unit extends Func
+          ? ReturnType<Unit>
+          : Unit
+        : Unit
     : InferUnitValue<Def>;
 
 function createBlockProxy<B extends BlocksMap, Local extends boolean>(
@@ -525,7 +541,10 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
           const unit = isFactory(def)
             ? def()
             : isUnitDef(def)
-              ? def[unitSymbol]
+              ? def.opts.isFactory === true &&
+                typeof def[unitSymbol] === "function"
+                ? def[unitSymbol]()
+                : def[unitSymbol]
               : def;
 
           cachedblock[prop] = unit;
@@ -598,11 +617,29 @@ function isPromise<T>(value: unknown): value is Promise<T> {
       typeof value.then == "function")
   );
 }
+function isPromiseDef<T>(
+  def: unknown,
+): def is UnitDef<Promise<T>, UnitOptions> {
+  if (!isUnitDef(def)) return false;
+  const value = def[unitSymbol];
+
+  return (
+    value instanceof Promise ||
+    (typeof value === "object" &&
+      value !== null &&
+      "then" in value &&
+      typeof value.then == "function")
+  );
+}
 
 type Func = (...args: unknown[]) => unknown;
 
 function isFunction<T>(unit: unknown): unit is () => T {
   return typeof unit === "function";
+}
+
+function isFunctionDef<T>(unit: unknown): unit is UnitDef<T, UnitOptions> {
+  return isUnitDef(unit) && isFunction(unit[unitSymbol]);
 }
 
 /**
@@ -616,6 +653,15 @@ interface Factory<T> {
 }
 
 function isFactory<T>(unit: unknown): unit is Factory<T> {
+  if (!isFunction(unit) && !isPromise(unit)) {
+    return false;
+  }
+  return "isFactory" in unit && unit.isFactory === true;
+}
+
+function isFactoryDef<T>(def: unknown): def is UnitDef<T, UnitOptions> {
+  if (!isUnitDef(def)) return false;
+  const unit = def[unitSymbol];
   if (!isFunction(unit) && !isPromise(unit)) {
     return false;
   }

@@ -292,3 +292,69 @@ Deno.test("defineUnit: isPrivate", () => {
   assertEquals(bwire("a").valor, "hola");
   assertEquals(bwire(".").valor, "hola");
 });
+
+Deno.test("defineUnit: isFactory", () => {
+  const $ = tagBlock("");
+  const $a = tagBlock("a");
+  const $b = tagBlock("a.b");
+  const awire = $a<Defs>();
+  const bwire = $b<Defs>();
+
+  const block = {
+    $,
+    valor: "rootvalue",
+    a: {
+      $: $a,
+      valor: "avalue",
+      factory: defineUnit(
+        () => {
+          const rootValue = awire().valor;
+          const avalue = awire(".").valor;
+          const bvalue = awire("a.b").valor;
+          return () => `${rootValue}-${avalue}-${bvalue}`;
+        },
+        { isFactory: true },
+      ),
+      b: {
+        $: $b,
+        valor: "bvalue",
+        deepFactory: defineUnit(
+          () => {
+            const rootValue = bwire().valor;
+            const avalue = bwire("a").valor;
+            const bvalue = bwire(".").valor;
+            return () => `${rootValue}-${avalue}-${bvalue}`;
+          },
+          { isFactory: true },
+        ),
+        deepFactory2: defineUnit(
+          () => {
+            return bwire(".").deepFactory;
+          },
+          { isFactory: true },
+        ),
+      },
+    },
+  };
+
+  type Defs = InferBlocks<typeof block>;
+  const main = wireUp(block);
+
+  assertEquals(main().valor, "rootvalue");
+  assertEquals(main("a").valor, "avalue");
+  assertEquals(main("a").factory(), "rootvalue-avalue-bvalue");
+  assertEquals(main("a.b").deepFactory(), "rootvalue-avalue-bvalue");
+  assertEquals(main("a.b").deepFactory2(), "rootvalue-avalue-bvalue");
+
+  assertEquals(awire().valor, "rootvalue");
+  assertEquals(awire(".").valor, "avalue");
+  assertEquals(awire(".").factory(), "rootvalue-avalue-bvalue");
+  assertEquals(awire("a.b").deepFactory(), "rootvalue-avalue-bvalue");
+  assertEquals(awire("a.b").deepFactory2(), "rootvalue-avalue-bvalue");
+
+  assertEquals(bwire().valor, "rootvalue");
+  assertEquals(bwire("a").valor, "avalue");
+  assertEquals(bwire("a").factory(), "rootvalue-avalue-bvalue");
+  assertEquals(bwire(".").deepFactory(), "rootvalue-avalue-bvalue");
+  assertEquals(bwire(".").deepFactory2(), "rootvalue-avalue-bvalue");
+});
