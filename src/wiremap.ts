@@ -16,6 +16,7 @@ type Block<T extends Hashmap> = T & {
 type BlocksMap = Record<string, Block<Hashmap>>;
 
 const blockSymbol = Symbol("BlockSymbol");
+const unitSymbol = Symbol("UnitSymbol");
 
 /**
  * Determines the return type of wireUp - returns Promise<Wire> if any async factories exist.
@@ -47,8 +48,8 @@ type ContainsAsyncFactory<T extends Hashmap> = true extends {
 /**
  * The main wire function interface that provides different access patterns:
  * - () returns root block proxy
- * - (".") returns local block proxy (same block context)
- * - ("path") returns specific block proxy
+ * - (".") returns local block proxy (same block context, includes private units)
+ * - ("path.of.the.block") returns specific block proxy
  */
 interface Wire<D extends Hashmap, N extends string> {
   // root block resolution
@@ -471,7 +472,13 @@ type BlockProxy<B extends Hashmap, Local extends boolean> = Local extends true
  * Infers the actual value type of a unit, resolving factories to their return types.
  */
 type InferUnitValue<D> =
-  D extends Factory<infer T> ? (T extends Promise<infer V> ? V : T) : D;
+  D extends Factory<infer T>
+    ? T extends Promise<infer V>
+      ? V
+      : T
+    : D extends UnitDef<infer U, any>
+      ? U
+      : D;
 
 /**
  * Like InferUnitValue but excludes private units from the type.
@@ -511,11 +518,15 @@ function createBlockProxy<B extends BlocksMap, Local extends boolean>(
 
           const def = blockDef[prop];
 
-          const unit = isFactory(def) ? def() : def;
+          const unit = isFactory(def)
+            ? def()
+            : isUnitDef(def)
+              ? def[unitSymbol]
+              : def;
 
           cachedblock[prop] = unit;
           cache.unit.set(finalKey, unit);
-          return def;
+          return unit;
         }
 
         throw new Error(`Block '${blockPath}' has no unit named '${prop}'`);
@@ -547,6 +558,33 @@ function getBlockUnitKeys<B extends Hashmap, Local extends boolean>(
     if (itemIsBlock(unit) || isBlockTag(unit)) return false;
     return local ? true : !isPrivate(unit);
   });
+}
+
+interface UnitOptions {
+  isPrivate?: boolean;
+  isFactory?: boolean;
+  isAsync?: boolean;
+  // isBound?: boolean // Planned
+  // isLazy?: boolean // Planned
+  // isEager?: boolean // Planned
+}
+
+interface UnitDef<U, O extends UnitOptions> {
+  [unitSymbol]: U;
+  opts: O;
+}
+
+type IsUnitDef<T> = T extends UnitDef<unknown, UnitOptions> ? true : false;
+
+export function defineUnit<T, const O extends UnitOptions>(
+  def: T,
+  opts = {} as O,
+): UnitDef<T, O> {
+  return { [unitSymbol]: def, opts };
+}
+
+function isUnitDef<T>(def: unknown): def is UnitDef<T, UnitOptions> {
+  return typeof def === "object" && def !== null && unitSymbol in def;
 }
 
 function isPromise<T>(value: unknown): value is Promise<T> {

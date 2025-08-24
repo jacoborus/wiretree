@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { tagBlock, wireUp, type InferBlocks } from "./wiremap.ts";
+import { tagBlock, wireUp, defineUnit, type InferBlocks } from "./wiremap.ts";
 
 Deno.test("wireUp resolves dependencies", () => {
   const defs = {
@@ -102,7 +102,7 @@ Deno.test("error handling for missing dependencies", () => {
   }
 });
 
-Deno.test("mockInjection", () => {
+Deno.test("mock injection", () => {
   const fakeUnits = {
     "@test.service": {
       getByEmail: (email: string) => {
@@ -230,4 +230,13 @@ Deno.test("wireUp protects private units", () => {
     false,
     "Private units should not be accessible from root injector",
   );
+});
+
+Deno.test("defineUnit: no options", () => {
+  const block = {
+    $: tagBlock(""),
+    valor: defineUnit(5),
+  };
+  const main = wireUp(block);
+  assertEquals(main().valor, 5);
 });
